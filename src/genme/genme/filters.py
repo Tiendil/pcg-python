@@ -1,0 +1,39 @@
+
+import random
+
+
+class Fraction:
+    __slots__ = ('fraction',)
+
+    def __init__(self, fraction):
+        self.fraction = fraction
+
+    def __call__(self, node):
+        return (random.random() < self.fraction)
+
+
+class Marked:
+    __slots__ = ('marker',)
+
+    def __init__(self, marker):
+        self.marker = marker
+
+    def __call__(self, node):
+        return node.has_mark(self.marker)
+
+
+class Count:
+    __slots__ = ('number',)
+
+    def __init__(self, number):
+        self.number = number
+
+    def __rrshift__(self, other):
+        return len(list(other)) == self.number
+
+
+class Exist:
+    __slots__ = ()
+
+    def __rrshift__(self, other):
+        return 0 < len(list(other))
