@@ -3,6 +3,7 @@ import enum
 import math
 import random
 import contextlib
+import dataclasses
 
 
 ##############
@@ -18,9 +19,10 @@ class OPERATION(enum.Enum):
 
 
 class Node:
-    __slots__ = ('coordinates', 'tags', 'counters', 'markers', 'operations')
+    __slots__ = ('world', 'coordinates', 'tags', 'counters', 'markers', 'operations')
 
     def __init__(self):
+        self.world = None
         self.coordinates = None
         self.tags = set()
         self.counters = {}
@@ -29,6 +31,7 @@ class Node:
 
     def clone(self):
         clone = Node()
+        clone.world = self.world
         clone.coordinates = self.coordinates
         clone.tags |= set(self.tags)
         clone.counters.update(self.counters)
@@ -68,18 +71,93 @@ class Node:
         return self.markers.get(marker.__class__) == marker
 
 
+@dataclasses.dataclass(frozen=True)
 class XY:
     __slots__ = ('x', 'y')
 
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+    x: int
+    y: int
 
-    def euclidean_distance(self, xy):
-        return math.sqrt((self.x-xy.x)**2 + (self.y-xy.y)**2)
+    def move(self, dx, dy):
+        return XY(self.x + dx, self.y + dy)
 
-    def manhattan_distance(self, xy):
-        return abs(self.x-xy.x) + abs(self.y-xy.y)
+
+class BaseArea:
+    __slots__ = ('world', 'center', 'min_distance', 'max_distance')
+
+    _CACHE = {}
+
+    def __init__(self, node, min_distance, max_distance=None):
+        if max_distance is None:
+            max_distance = min_distance
+
+        self.world = node.world
+        self.center = node.coordinates
+        self.min_distance = min_distance
+        self.max_distance = max_distance
+
+    def nodes(self, *filters, include=False):
+        for point in self._template(self.min_distance, self.max_distance):
+            if point == self.center and not include:
+                continue
+
+            coordinates = self.center.move(point.x, point.y)
+
+            node = self.world[coordinates]
+
+            if node is None:
+                continue
+
+            if all(filter(node) for filter in filters):
+                yield node
+
+    @classmethod
+    def _template(cls, min_distance, max_distance):
+        key = (min_distance, max_distance)
+
+        if key in cls._CACHE:
+            return cls._CACHE[key]
+
+        area = set()
+
+        for dx in range(-max_distance, max_distance + 1):
+            for dy in range(-max_distance, max_distance + 1):
+
+                point = XY(dx, dy)
+
+                if min_distance <= cls.distance(point) <= max_distance:
+                    area.add(point)
+
+        cls._CACHE[key] = area
+
+        return area
+
+
+class Euclidean(BaseArea):
+    __slots__ = ()
+
+    @classmethod
+    def distance(self, a, b=XY(0, 0)):
+        return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
+
+
+
+class Manhattan(BaseArea):
+    __slots__ = ()
+
+    @classmethod
+    def distance(self, a, b=XY(0, 0)):
+        return abs(a.x-b.x) + abs(a.y-b.y)
+
+
+class SquareRadius(BaseArea):
+    __slots__ = ()
+
+    _CACHE = {}
+
+    @classmethod
+    def distance(self, a, b=XY(0, 0)):
+        return max(abs(a.x-b.x), abs(a.y-b.y))
 
 
 class Fraction:
@@ -102,21 +180,6 @@ class Marked:
         return node.has_mark(self.marker)
 
 
-class Distance:
-    __slots__ = ('method', 'min_distance', 'max_distance')
-
-    def __init__(self, method, point, min_distance, max_distance=None):
-        if max_distance is None:
-            max_distance = min_distance
-
-        self.method = getattr(point, f'{method}_distance')
-        self.min_distance = min_distance
-        self.max_distance = max_distance
-
-    def __call__(self, node):
-        return self.min_distance <= self.method(node.coordinates) <= self.max_distance
-
-
 class Count:
     __slots__ = ('number',)
 
@@ -125,6 +188,13 @@ class Count:
 
     def __rrshift__(self, other):
         return len(list(other)) == self.number
+
+
+class Exist:
+    __slots__ = ()
+
+    def __rrshift__(self, other):
+        return 0 < len(list(other))
 
 
 class World2D:
@@ -144,10 +214,17 @@ class World2D:
 
             for x in range(self.width):
                 node = base_node.clone()
+                node.world = self
                 node.coordinates = XY(x, y)
                 row.append(node)
 
             self.map.append(row)
+
+    def __getitem__(self, point):
+        if (0 <= point.x < self.width) and (0 <= point.y < self.height):
+            return self.map[point.y][point.x]
+
+        return None
 
     def nodes(self, *filters):
         for row in self.map:
@@ -171,6 +248,8 @@ class World2D:
 class TERRAIN(enum.Enum):
     GRASS = 1
     WATER = 2
+    SAND = 3
+    FOREST = 4
 
 
 base_node = Node()
@@ -186,9 +265,24 @@ with world.step() as nodes:
         node.mark(TERRAIN.WATER)
 
 with world.step() as nodes:
-    for node in nodes(Marked(TERRAIN.GRASS)):
-        if nodes(Distance('euclidean', node.coordinates, 2), Marked(TERRAIN.WATER)) >> Count(1):
+    for node in nodes(Fraction(0.70), Marked(TERRAIN.GRASS)):
+        if Euclidean(node, 1, 2).nodes(Marked(TERRAIN.WATER)) >> Count(1):
             node.mark(TERRAIN.WATER)
+
+with world.step() as nodes:
+    for node in nodes(Marked(TERRAIN.GRASS)):
+        if SquareRadius(node, 1).nodes(Marked(TERRAIN.WATER)) >> Exist():
+            node.mark(TERRAIN.SAND)
+
+for _ in range(3):
+    with world.step() as nodes:
+        for node in nodes(Fraction(0.1), Marked(TERRAIN.GRASS)):
+            if SquareRadius(node, 1).nodes(Marked(TERRAIN.SAND)) >> Exist():
+                node.mark(TERRAIN.SAND)
+
+with world.step() as nodes:
+    for node in nodes(Fraction(0.25), Marked(TERRAIN.GRASS)):
+        node.mark(TERRAIN.FOREST)
 
 
 ############
@@ -203,5 +297,9 @@ for row in world.map:
             line.append(' ')
         elif node.has_mark(TERRAIN.WATER):
             line.append('~')
+        elif node.has_mark(TERRAIN.SAND):
+            line.append('.')
+        elif node.has_mark(TERRAIN.FOREST):
+            line.append('f')
 
     print(''.join(line))
