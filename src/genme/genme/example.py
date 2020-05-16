@@ -10,6 +10,7 @@ from .colors import *
 
 
 class TERRAIN(enum.Enum):
+    TEST = 0
     GRASS = 1
     WATER = 2
     SAND = 3
@@ -25,7 +26,7 @@ world = World2D(width=80, height=80, base_node=base_node)
 
 
 with world.step() as nodes:
-    for node in nodes(Fraction(0.02)):
+    for node in nodes(Fraction(0.01)):
         node.mark(TERRAIN.WATER)
 
 with world.step() as nodes:
@@ -51,8 +52,15 @@ for _ in range(3):
                 node.mark(TERRAIN.WATER)
 
 with world.step() as nodes:
-    for node in nodes(Fraction(0.25), Marked(TERRAIN.GRASS)):
+    for node in nodes(Fraction(0.05), Marked(TERRAIN.GRASS)):
         node.mark(TERRAIN.FOREST)
+
+with world.step() as nodes:
+    for _ in range(4):
+        for node in nodes(Fraction(0.1), Marked(TERRAIN.GRASS)):
+            if (SquareRadius(node, 2).nodes(Marked(TERRAIN.FOREST)) >> Exist() and
+                SquareRadius(node, 1).nodes(Marked(TERRAIN.FOREST)) >> NotExist()):
+                node.mark(TERRAIN.FOREST)
 
 
 ############
@@ -61,11 +69,11 @@ with world.step() as nodes:
 
 drawer = Drawer2D(cell_size=10)
 
-
 drawer.add_biome(Biome(checker=Marked(TERRAIN.GRASS), sprite=Sprite(RGBA(0, 1, 0))))
 drawer.add_biome(Biome(checker=Marked(TERRAIN.WATER), sprite=Sprite(RGBA(0, 0, 1))))
-drawer.add_biome(Biome(checker=Marked(TERRAIN.SAND), sprite=Sprite(RGBA(0, 0.5, 0.5))))
-drawer.add_biome(Biome(checker=Marked(TERRAIN.FOREST), sprite=Sprite(RGBA(0.5, 1, 0.5))))
+drawer.add_biome(Biome(checker=Marked(TERRAIN.SAND), sprite=Sprite(RGBA(1, 1, 0))))
+drawer.add_biome(Biome(checker=Marked(TERRAIN.FOREST), sprite=Sprite(RGBA(0, 0.5, 0))))
+drawer.add_biome(Biome(checker=Marked(TERRAIN.TEST), sprite=Sprite(RGBA(0, 0, 0))))
 
 canvas = drawer.draw(world)
 

@@ -48,3 +48,10 @@ class Exist:
 
     def __rrshift__(self, other):
         return 0 < len(list(other))
+
+
+class NotExist(Exist):
+    __slots__ = ()
+
+    def __rrshift__(self, other):
+        return not super().__rrshift__(other)
