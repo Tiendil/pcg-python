@@ -3,8 +3,10 @@ import enum
 
 from .nodes import *
 from .world2d import *
+from .drawer2d import *
 from .filters import *
 from .topologies import *
+from .colors import *
 
 
 class TERRAIN(enum.Enum):
@@ -57,35 +59,14 @@ with world.step() as nodes:
 # visualizer
 ############
 
-
-from PIL import Image, ImageDraw
-
-CELL_SIZE = 10
+drawer = Drawer2D(cell_size=10)
 
 
-canvas = Image.new('RGBA',
-                   (world.width * CELL_SIZE, world.height * CELL_SIZE),
-                   (255,255,255,0))
+drawer.add_biome(Biome(checker=Marked(TERRAIN.GRASS), sprite=Sprite(RGBA(0, 1, 0))))
+drawer.add_biome(Biome(checker=Marked(TERRAIN.WATER), sprite=Sprite(RGBA(0, 0, 1))))
+drawer.add_biome(Biome(checker=Marked(TERRAIN.SAND), sprite=Sprite(RGBA(0, 0.5, 0.5))))
+drawer.add_biome(Biome(checker=Marked(TERRAIN.FOREST), sprite=Sprite(RGBA(0.5, 1, 0.5))))
 
-drawer = ImageDraw.Draw(canvas)
-
-for node in world.nodes():
-    color = None
-
-    if node.has_mark(TERRAIN.GRASS):
-        color = (0, 255, 0)
-    elif node.has_mark(TERRAIN.WATER):
-        color = (0, 0, 255)
-    elif node.has_mark(TERRAIN.SAND):
-        color = (0, 127, 127)
-    elif node.has_mark(TERRAIN.FOREST):
-        color = (127, 255, 127)
-
-    x, y = node.coordinates.xy()
-
-    drawer.rectangle(((x * CELL_SIZE, y * CELL_SIZE),
-                      ((x + 1) * CELL_SIZE, (y + 1) * CELL_SIZE)),
-                     fill=color)
-
+canvas = drawer.draw(world)
 
 canvas.show()
