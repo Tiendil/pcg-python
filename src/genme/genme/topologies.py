@@ -9,6 +9,9 @@ class XY:
     x: int
     y: int
 
+    def xy(self):
+        return self.x, self.y
+
     def move(self, dx, dy):
         return XY(self.x + dx, self.y + dy)
 

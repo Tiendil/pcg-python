@@ -32,6 +32,17 @@ class Count:
         return len(list(other)) == self.number
 
 
+class Between:
+    __slots__ = ('min', 'max')
+
+    def __init__(self, min, max):
+        self.min = min
+        self.max = max
+
+    def __rrshift__(self, other):
+        return self.min <= len(list(other)) <= self.max
+
+
 class Exist:
     __slots__ = ()
 
