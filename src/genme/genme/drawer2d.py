@@ -57,17 +57,16 @@ class Drawer2D:
 
         return canvas
 
-    def save_history(self, filename, space, width, height):
+    def save_history(self, filename, space, width, height, duration=1000):
         images = []
 
         for history in space._history:
             canvas = self.draw(history.values(), width=width, height=height)
             images.append(canvas)
 
-
         images[0].save(filename,
                        lossles=True,
                        quality=100,
-                       duration=1000,
+                       duration=duration,
                        save_all=True,
                        append_images=images[1:])

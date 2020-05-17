@@ -1,12 +1,12 @@
 
 import enum
 
-from .nodes import *
-from .drawer2d import *
-from .filters import *
-from .topologies import *
-from .colors import *
-from .space import *
+from genme.nodes import *
+from genme.drawer2d import *
+from genme.filters import *
+from genme.topologies import *
+from genme.colors import *
+from genme.space import *
 
 
 class TERRAIN(enum.Enum):
