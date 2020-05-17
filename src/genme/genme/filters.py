@@ -22,6 +22,13 @@ class Filter:
         return Inverter(self)
 
 
+class All(Filter):
+    __slots__ = ()
+
+    def __call__(self, node):
+        return True
+
+
 class Fraction(Filter):
     __slots__ = ('fraction',)
 

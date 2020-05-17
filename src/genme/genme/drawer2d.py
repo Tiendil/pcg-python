@@ -41,13 +41,13 @@ class Drawer2D:
             if biome.checker(node):
                 return biome
 
-    def draw(self, space, width, height):
+    def draw(self, nodes, width, height):
         canvas = Image.new('RGBA',
                            (width * self.cell_size,
                             height * self.cell_size),
                            BLACK.ints)
 
-        for node in space.base():
+        for node in nodes:
             biome = self.choose_biome(node)
 
             x, y = node.coordinates.xy()
@@ -56,3 +56,18 @@ class Drawer2D:
                          (x * self.cell_size, y * self.cell_size))
 
         return canvas
+
+    def save_history(self, filename, space, width, height):
+        images = []
+
+        for history in space._history:
+            canvas = self.draw(history.values(), width=width, height=height)
+            images.append(canvas)
+
+
+        images[0].save(filename,
+                       lossles=True,
+                       quality=100,
+                       duration=1000,
+                       save_all=True,
+                       append_images=images[1:])

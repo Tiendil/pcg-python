@@ -3,12 +3,14 @@ import contextlib
 
 
 class Space:
-    __slots__ = ('_base_nodes', '_new_nodes', '_fixed_order')
+    __slots__ = ('_base_nodes', '_new_nodes', '_fixed_order', 'store_history', '_history')
 
-    def __init__(self):
+    def __init__(self, store_history=False):
         self._base_nodes = {}
         self._new_nodes = {}
         self._fixed_order = []
+        self.store_history = store_history
+        self._history = []
 
     def initialize(self, base_node, nodes_coordinates):
         for coordinates in nodes_coordinates:
@@ -57,5 +59,9 @@ class Space:
 
         yield
 
+        if self.store_history:
+            self._history.append(dict(self._base_nodes))
+
         self._base_nodes.update(self._new_nodes)
+
         self._new_nodes.clear()

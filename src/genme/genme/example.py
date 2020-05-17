@@ -20,7 +20,7 @@ class TERRAIN(enum.Enum):
 WIDTH = 80
 HEIGHT = 80
 
-space = Space()
+space = Space(store_history=True)
 space.initialize(Node(), cells_square(width=WIDTH, height=HEIGHT))
 
 
@@ -75,8 +75,9 @@ drawer.add_biome(Biome(checker=Marked(TERRAIN.GRASS), sprite=Sprite(RGBA(0, 1, 0
 drawer.add_biome(Biome(checker=Marked(TERRAIN.WATER), sprite=Sprite(RGBA(0, 0, 1))))
 drawer.add_biome(Biome(checker=Marked(TERRAIN.SAND), sprite=Sprite(RGBA(1, 1, 0))))
 drawer.add_biome(Biome(checker=Marked(TERRAIN.FOREST), sprite=Sprite(RGBA(0, 0.5, 0))))
-drawer.add_biome(Biome(checker=Marked(TERRAIN.TEST), sprite=Sprite(RGBA(0, 0, 0))))
+drawer.add_biome(Biome(checker=All(), sprite=Sprite(RGBA(0, 0, 0))))
 
-canvas = drawer.draw(space, width=WIDTH, height=HEIGHT)
+# canvas = drawer.draw(space.base(), width=WIDTH, height=HEIGHT)
+# canvas.show()
 
-canvas.show()
+drawer.save_history('./example.webp', space, width=WIDTH, height=HEIGHT)
