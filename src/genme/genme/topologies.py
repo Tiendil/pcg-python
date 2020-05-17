@@ -2,7 +2,7 @@ import math
 import dataclasses
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, order=True)
 class XY:
     __slots__ = ('x', 'y')
 
@@ -16,8 +16,14 @@ class XY:
         return XY(self.x + dx, self.y + dy)
 
 
+def cells_square(width, height):
+    for y in range(height):
+        for x in range(width):
+            yield XY(x, y)
+
+
 class BaseArea:
-    __slots__ = ('world', 'center', 'min_distance', 'max_distance')
+    __slots__ = ('space', 'center', 'min_distance', 'max_distance')
 
     _CACHE = {}
 
@@ -25,25 +31,34 @@ class BaseArea:
         if max_distance is None:
             max_distance = min_distance
 
-        self.world = node.world
+        self.space = node.space
         self.center = node.coordinates
         self.min_distance = min_distance
         self.max_distance = max_distance
 
-    def nodes(self, *filters, include=False):
+    def _nodes(self, node_getter, *filters, include=False):
         for point in self._template(self.min_distance, self.max_distance):
             if point == self.center and not include:
                 continue
 
             coordinates = self.center.move(point.x, point.y)
 
-            node = self.world[coordinates]
+            node = node_getter(coordinates)
 
             if node is None:
                 continue
 
             if all(filter(node) for filter in filters):
                 yield node
+
+    def base(self, *filters):
+        yield from self._nodes(self.space.base_node, *filters)
+
+    def new(self, *filters):
+        yield from self._nodes(self.space.new_node, *filters)
+
+    def actual(self, *filters):
+        yield from self._nodes(self.space.actual_node, *filters)
 
     @classmethod
     def _template(cls, min_distance, max_distance):
@@ -73,7 +88,6 @@ class Euclidean(BaseArea):
     @classmethod
     def distance(self, a, b=XY(0, 0)):
         return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
-
 
 
 class Manhattan(BaseArea):

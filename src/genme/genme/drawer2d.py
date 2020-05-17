@@ -41,13 +41,13 @@ class Drawer2D:
             if biome.checker(node):
                 return biome
 
-    def draw(self, world):
+    def draw(self, space, width, height):
         canvas = Image.new('RGBA',
-                           (world.width * self.cell_size,
-                            world.height * self.cell_size),
+                           (width * self.cell_size,
+                            height * self.cell_size),
                            BLACK.ints)
 
-        for node in world.nodes():
+        for node in space.base():
             biome = self.choose_biome(node)
 
             x, y = node.coordinates.xy()

@@ -11,19 +11,19 @@ class OPERATION(enum.Enum):
 
 
 class Node:
-    __slots__ = ('world', 'coordinates', 'tags', 'counters', 'markers', 'operations')
+    __slots__ = ('space', 'coordinates', 'tags', 'counters', 'markers', '_new_node')
 
     def __init__(self):
-        self.world = None
+        self.space = None
         self.coordinates = None
         self.tags = set()
         self.counters = {}
         self.markers = {}
-        self.operations = []
+        self._new_node = None
 
     def clone(self):
         clone = Node()
-        clone.world = self.world
+        clone.space = self.space
         clone.coordinates = self.coordinates
         clone.tags |= set(self.tags)
         clone.counters.update(self.counters)
@@ -31,33 +31,29 @@ class Node:
 
         return clone
 
-    def apply_changes(self):
-        for operation, key in self.operations:
-            if operation == OPERATION.ADD_TAG:
-                self.tags.add(key)
-            elif operation == OPERATION.REMOVE_TAG:
-                if key in self.tags:
-                    self.tags.remove(key)
-            elif operation == OPERATION.COUNT:
-                self.counters[key[0]] += key[1]
-            elif operation == OPERATION.SET_MARKER:
-                self.markers[key.__class__] = key
-            else:
-                raise NotImplementedError(f'unknown operation {operation}: {key}, {value}')
+    def new_node(self):
+        if self._new_node is not None:
+            return self._new_node
 
-        self.operations[:] = ()
+        self._new_node = self.clone()
+        self.space.register_new_node(self._new_node)
+
+        return self._new_node
 
     def mark(self, marker):
-        self.operations.append((OPERATION.SET_MARKER, marker))
+        self.new_node().markers[marker.__class__] = marker
 
     def tag(self, tag):
-        self.operations.append((OPERATION.ADD_TAG, tag))
+        self.new_node().tags.add(tag)
 
     def untag(self, tag):
-        self.operations.append((OPERATION.REMOVE_TAG, tag))
+        new_node = self.new_node()
+
+        if tag in new_node.tags:
+            new_node.tags.remove(tag)
 
     def count(self, counter, value):
-        self.operations.append((OPERATION.COUNT, (counter, value)))
+        self.new_node().counters[counter] += value
 
     def has_mark(self, marker):
         return self.markers.get(marker.__class__) == marker
