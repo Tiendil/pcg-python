@@ -27,7 +27,7 @@ class BaseArea:
 
     _CACHE = {}
 
-    def __init__(self, node, min_distance, max_distance=None):
+    def __init__(self, node, min_distance=1, max_distance=None):
         if max_distance is None:
             max_distance = min_distance
 

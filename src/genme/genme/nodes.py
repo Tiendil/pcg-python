@@ -57,3 +57,6 @@ class Node:
 
     def has_mark(self, marker):
         return self.markers.get(marker.__class__) == marker
+
+    def __iter__(self):
+        yield self

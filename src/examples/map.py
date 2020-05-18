@@ -4,6 +4,7 @@ import enum
 from genme.nodes import *
 from genme.drawer2d import *
 from genme.filters import *
+from genme.aggregators import *
 from genme.topologies import *
 from genme.colors import *
 from genme.space import *
@@ -29,39 +30,39 @@ with space.step():
         node.mark(TERRAIN.GRASS)
 
 with space.step():
-    for node in space.base(Fraction(0.01)):
+    for node in space.base() | Fraction(0.01):
         node.mark(TERRAIN.WATER)
 
 with space.step():
-    for node in space.base(Fraction(0.80), Marked(TERRAIN.GRASS)):
-        if Euclidean(node, 1, 3).base(Marked(TERRAIN.WATER)) >> Exist():
+    for node in space.base() | Fraction(0.80) | Marked(TERRAIN.GRASS):
+        if Euclidean(node, 1, 3).base() | Marked(TERRAIN.WATER):
             node.mark(TERRAIN.WATER)
 
 with space.step():
-    for node in space.base(Marked(TERRAIN.GRASS)):
-        if SquareRadius(node, 1).base(Marked(TERRAIN.WATER)) >> Exist():
+    for node in space.base() | Marked(TERRAIN.GRASS):
+        if SquareRadius(node, 1).base() | Marked(TERRAIN.WATER):
             node.mark(TERRAIN.SAND)
 
 for _ in range(3):
     with space.step():
-        for node in space.base(Fraction(0.1), Marked(TERRAIN.GRASS)):
-            if SquareRadius(node, 1).base(Marked(TERRAIN.SAND)) >> Exist():
+        for node in space.base() | Fraction(0.1) | Marked(TERRAIN.GRASS):
+            if SquareRadius(node, 1).base() | Marked(TERRAIN.SAND):
                 node.mark(TERRAIN.SAND)
 
 for _ in range(3):
     with space.step():
-        for node in space.base(Marked(TERRAIN.SAND)):
-            if SquareRadius(node, 1).base(Marked(TERRAIN.WATER)) >> Between(6, 10):
+        for node in space.base() | Marked(TERRAIN.SAND):
+            if SquareRadius(node, 1).base() | Marked(TERRAIN.WATER) | Between(6, 10):
                 node.mark(TERRAIN.WATER)
 
 with space.step():
-    for node in space.base(Fraction(0.05), Marked(TERRAIN.GRASS)):
+    for node in space.base() | Fraction(0.05) | Marked(TERRAIN.GRASS):
         node.mark(TERRAIN.FOREST)
 
 with space.step():
-    for node in space.base(Fraction(0.4), Marked(TERRAIN.GRASS)):
-        if (SquareRadius(node, 2).base(Marked(TERRAIN.FOREST)) >> Exist() and
-            SquareRadius(node, 1).actual(Marked(TERRAIN.FOREST)) >> ~Exist()):
+    for node in space.base() | Fraction(0.4) | Marked(TERRAIN.GRASS):
+        if (SquareRadius(node, 2).base() | Marked(TERRAIN.FOREST) and
+            SquareRadius(node, 1).actual() | Marked(TERRAIN.FOREST)):
             node.mark(TERRAIN.FOREST)
 
 

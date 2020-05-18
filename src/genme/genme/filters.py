@@ -2,7 +2,32 @@
 import random
 
 
-class Inverter:
+class Filter:
+    __slots__ = ()
+
+    def __invert__(self):
+        return Inverter(self)
+
+    def __ror__(self, nodes):
+        return Stream(nodes, self)
+
+
+class Stream:
+    __slots__ = ('nodes', 'filter')
+
+    def __init__(self, nodes, filter):
+        self.nodes = nodes
+        self.filter = filter
+
+    def __iter__(self):
+        return (node for node in self.nodes if self.filter(node))
+
+    def __bool__(self):
+        return len(list(self)) > 0
+
+
+
+class Inverter(Filter):
     __slots__ = ('base',)
 
     def __init__(self, base):
@@ -10,16 +35,6 @@ class Inverter:
 
     def __call__(self, *argv, **kwargs):
         return not self.base.__call__(*argv, **kwargs)
-
-    def __rrshift__(self, other):
-        return not self.base.__rrshift__(other)
-
-
-class Filter:
-    __slots__ = ()
-
-    def __invert__(self):
-        return Inverter(self)
 
 
 class All(Filter):
@@ -47,31 +62,3 @@ class Marked(Filter):
 
     def __call__(self, node):
         return node.has_mark(self.marker)
-
-
-class Count(Filter):
-    __slots__ = ('number',)
-
-    def __init__(self, number):
-        self.number = number
-
-    def __rrshift__(self, other):
-        return len(list(other)) == self.number
-
-
-class Between(Filter):
-    __slots__ = ('min', 'max')
-
-    def __init__(self, min, max):
-        self.min = min
-        self.max = max
-
-    def __rrshift__(self, other):
-        return self.min <= len(list(other)) <= self.max
-
-
-class Exist(Filter):
-    __slots__ = ()
-
-    def __rrshift__(self, other):
-        return 0 < len(list(other))

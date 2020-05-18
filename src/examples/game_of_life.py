@@ -4,6 +4,7 @@ import enum
 from genme.nodes import *
 from genme.drawer2d import *
 from genme.filters import *
+from genme.aggregators import *
 from genme.topologies import *
 from genme.colors import *
 from genme.space import *
@@ -14,7 +15,7 @@ class CELL_STATE(enum.Enum):
     ALIVE = 1
 
 
-STEPS = 1000
+STEPS = 100
 DURATION = 100
 WIDTH = 80
 HEIGHT = 80
@@ -28,22 +29,21 @@ with space.step():
         node.mark(CELL_STATE.DEAD)
 
 with space.step():
-    for node in space.base(Fraction(0.2)):
+    for node in space.base() | Fraction(0.2):
         node.mark(CELL_STATE.ALIVE)
 
 for i in range(STEPS):
     print(f'step {i}/{STEPS}')
 
     with space.step():
-        for node in space.base(Marked(CELL_STATE.ALIVE)):
-            if SquareRadius(node, 1).base(Marked(CELL_STATE.ALIVE)) >> Between(0, 1):
-                node.mark(CELL_STATE.DEAD)
-            if SquareRadius(node, 1).base(Marked(CELL_STATE.ALIVE)) >> Between(4, 100):
-                node.mark(CELL_STATE.DEAD)
+        for node in space.base():
+            if node | Marked(CELL_STATE.ALIVE):
+                if SquareRadius(node).base() | Marked(CELL_STATE.ALIVE) | ~Between(2, 3):
+                    node.mark(CELL_STATE.DEAD)
 
-        for node in space.base(Marked(CELL_STATE.DEAD)):
-            if SquareRadius(node, 1).base(Marked(CELL_STATE.ALIVE)) >> Count(3):
-                node.mark(CELL_STATE.ALIVE)
+            else:
+                if SquareRadius(node).base() | Marked(CELL_STATE.ALIVE) | Count(3):
+                    node.mark(CELL_STATE.ALIVE)
 
 ############
 # visualizer

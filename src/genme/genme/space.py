@@ -38,21 +38,18 @@ class Space:
 
         return node
 
-    def _nodes(self, node_getter, *filters):
+    def _nodes(self, node_getter):
         for coordinates in self._fixed_order:
-            node = node_getter(coordinates)
+            yield node_getter(coordinates)
 
-            if all(filter(node) for filter in filters):
-                yield node
+    def base(self):
+        yield from self._nodes(self.base_node)
 
-    def base(self, *filters):
-        yield from self._nodes(self.base_node, *filters)
+    def new(self):
+        yield from self._nodes(self.new_node)
 
-    def new(self, *filters):
-        yield from self._nodes(self.new_node, *filters)
-
-    def actual(self, *filters):
-        yield from self._nodes(self.actual_node, *filters)
+    def actual(self):
+        yield from self._nodes(self.actual_node)
 
     @contextlib.contextmanager
     def step(self):
