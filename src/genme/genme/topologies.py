@@ -9,6 +9,7 @@ class XY:
     x: int
     y: int
 
+    @property
     def xy(self):
         return self.x, self.y
 
@@ -39,24 +40,24 @@ class BaseArea:
         self.include = include
 
     def base(self):
-        for point in self.coordinates():
-            yield self.space.base_node(point)
+        for i in self.indexes():
+            yield self.space.base_node(i)
 
     def new(self):
-        for point in self.coordinates():
-            yield self.space.new_node(point)
+        for i in self.indexes():
+            yield self.space.new_node(i)
 
     def actual(self):
-        for point in self.coordinates():
-            yield self.space.actual_node(point)
+        for i in self.indexes():
+            yield self.space.actual_node(i)
 
-    def coordinates(self):
+    def indexes(self):
         key = (self.center, self.min_distance, self.max_distance, self.include)
 
         if key in self._CACHE:
             return self._CACHE[key]
 
-        coordinates = []
+        indexes = []
 
         for point in self._template(self.min_distance, self.max_distance):
             if point == self.center and not self.include:
@@ -64,14 +65,16 @@ class BaseArea:
 
             real_point = self.center.move(*point.xy)
 
-            if not self.space.has_node(real_point):
+            index = self.space.indexes.get(real_point)
+
+            if index is None:
                 continue
 
-            coordinates.append(real_point)
+            indexes.append(index)
 
-        self._CACHE[key] = coordinates
+        self._CACHE[key] = indexes
 
-        return coordinates
+        return indexes
 
     @classmethod
     def _template(cls, min_distance, max_distance):

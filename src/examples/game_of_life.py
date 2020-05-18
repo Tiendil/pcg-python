@@ -33,7 +33,7 @@ with space.step():
         node.mark(CELL_STATE.ALIVE)
 
 for i in range(STEPS):
-    print(f'step {i}/{STEPS}')
+    print(f'step {i+1}/{STEPS}')
 
     with space.step():
         for node in space.base():

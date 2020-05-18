@@ -1,11 +1,12 @@
 
 
 class Node:
-    __slots__ = ('space', 'coordinates', 'tags', 'counters', 'markers', '_new_node')
+    __slots__ = ('space', 'coordinates', 'index', 'tags', 'counters', 'markers', '_new_node')
 
     def __init__(self):
         self.space = None
         self.coordinates = None
+        self.index = None
         self.tags = set()
         self.counters = {}
         self.markers = {}
@@ -15,6 +16,7 @@ class Node:
         clone = Node()
         clone.space = self.space
         clone.coordinates = self.coordinates
+        clone.index = self.index
         clone.tags |= set(self.tags)
         clone.counters.update(self.counters)
         clone.markers.update(self.markers)

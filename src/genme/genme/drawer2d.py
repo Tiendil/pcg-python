@@ -50,7 +50,7 @@ class Drawer2D:
         for node in nodes:
             biome = self.choose_biome(node)
 
-            x, y = node.coordinates.xy()
+            x, y = node.coordinates.xy
 
             canvas.paste(biome.sprite.image,
                          (x * self.cell_size, y * self.cell_size))
@@ -61,7 +61,7 @@ class Drawer2D:
         images = []
 
         for history in space._history:
-            canvas = self.draw(history.values(), width=width, height=height)
+            canvas = self.draw(history, width=width, height=height)
             images.append(canvas)
 
         images[0].save(filename,
