@@ -25,6 +25,9 @@ class Space:
     def register_new_node(self, node):
         self._new_nodes[node.coordinates] = node
 
+    def has_node(self, coordinates):
+        return coordinates in self._base_nodes
+
     def base_node(self, coordinates):
         return self._base_nodes.get(coordinates)
 
@@ -34,23 +37,22 @@ class Space:
     def actual_node(self, coordinates):
         node = self.new_node(coordinates)
 
-        if node is None:
-            node = self.base_node(coordinates)
+        if node is not None:
+            return node
 
-        return node
-
-    def _nodes(self, node_getter):
-        for coordinates in self._fixed_order:
-            yield node_getter(coordinates)
+        return self.base_node(coordinates)
 
     def base(self):
-        yield from self._nodes(self.base_node)
+        for coordinates in self._fixed_order:
+            yield self.base_node(coordinates)
 
     def new(self):
-        yield from self._nodes(self.new_node)
+        for coordinates in self._fixed_order:
+            yield self.new_node(coordinates)
 
     def actual(self):
-        yield from self._nodes(self.actual_node)
+        for coordinates in self._fixed_order:
+            yield self.actual_node(coordinates)
 
     @contextlib.contextmanager
     def step(self):

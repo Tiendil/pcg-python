@@ -23,11 +23,12 @@ def cells_square(width, height):
 
 
 class BaseArea:
-    __slots__ = ('space', 'center', 'min_distance', 'max_distance')
+    __slots__ = ('space', 'center', 'min_distance', 'max_distance', 'include')
 
-    _CACHE = {}
+    _TEMPLATE_CACHE = NotImplemented
+    _CACHE = NotImplemented
 
-    def __init__(self, node, min_distance=1, max_distance=None):
+    def __init__(self, node, min_distance=1, max_distance=None, include=False):
         if max_distance is None:
             max_distance = min_distance
 
@@ -35,37 +36,49 @@ class BaseArea:
         self.center = node.coordinates
         self.min_distance = min_distance
         self.max_distance = max_distance
+        self.include = include
 
-    def _nodes(self, node_getter, *filters, include=False):
+    def base(self):
+        for point in self.coordinates():
+            yield self.space.base_node(point)
+
+    def new(self):
+        for point in self.coordinates():
+            yield self.space.new_node(point)
+
+    def actual(self):
+        for point in self.coordinates():
+            yield self.space.actual_node(point)
+
+    def coordinates(self):
+        key = (self.center, self.min_distance, self.max_distance, self.include)
+
+        if key in self._CACHE:
+            return self._CACHE[key]
+
+        coordinates = []
+
         for point in self._template(self.min_distance, self.max_distance):
-            if point == self.center and not include:
+            if point == self.center and not self.include:
                 continue
 
-            coordinates = self.center.move(point.x, point.y)
+            real_point = self.center.move(*point.xy)
 
-            node = node_getter(coordinates)
-
-            if node is None:
+            if not self.space.has_node(real_point):
                 continue
 
-            if all(filter(node) for filter in filters):
-                yield node
+            coordinates.append(real_point)
 
-    def base(self, *filters):
-        yield from self._nodes(self.space.base_node, *filters)
+        self._CACHE[key] = coordinates
 
-    def new(self, *filters):
-        yield from self._nodes(self.space.new_node, *filters)
-
-    def actual(self, *filters):
-        yield from self._nodes(self.space.actual_node, *filters)
+        return coordinates
 
     @classmethod
     def _template(cls, min_distance, max_distance):
         key = (min_distance, max_distance)
 
-        if key in cls._CACHE:
-            return cls._CACHE[key]
+        if key in cls._TEMPLATE_CACHE:
+            return cls._TEMPLATE_CACHE[key]
 
         area = set()
 
@@ -77,13 +90,15 @@ class BaseArea:
                 if min_distance <= cls.distance(point) <= max_distance:
                     area.add(point)
 
-        cls._CACHE[key] = area
+        cls._TEMPLATE_CACHE[key] = area
 
         return area
 
 
 class Euclidean(BaseArea):
     __slots__ = ()
+    _TEMPLATE_CACHE = {}
+    _CACHE = {}
 
     @classmethod
     def distance(self, a, b=XY(0, 0)):
@@ -92,6 +107,8 @@ class Euclidean(BaseArea):
 
 class Manhattan(BaseArea):
     __slots__ = ()
+    _TEMPLATE_CACHE = {}
+    _CACHE = {}
 
     @classmethod
     def distance(self, a, b=XY(0, 0)):
@@ -100,7 +117,7 @@ class Manhattan(BaseArea):
 
 class SquareRadius(BaseArea):
     __slots__ = ()
-
+    _TEMPLATE_CACHE = {}
     _CACHE = {}
 
     @classmethod
