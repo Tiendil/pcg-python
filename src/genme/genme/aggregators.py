@@ -1,5 +1,6 @@
 
 import random
+import itertools
 
 
 class Aggregator:
@@ -26,7 +27,15 @@ class Count(Aggregator):
         self.number = number
 
     def __ror__(self, other):
-        return len(list(other)) == self.number
+        count = 0
+
+        for item in other:
+            count += 1
+
+            if self.number < count:
+                return False
+
+        return self.number == count
 
 
 class Between(Aggregator):
@@ -37,11 +46,12 @@ class Between(Aggregator):
         self.max = max
 
     def __ror__(self, other):
-        return self.min <= len(list(other)) <= self.max
+        count = 0
 
+        for item in other:
+            count += 1
 
-class Exist(Aggregator):
-    __slots__ = ()
+            if self.max < count:
+                return False
 
-    def __ror__(self, other):
-        return 0 < len(list(other))
+        return self.min <= count <= self.max

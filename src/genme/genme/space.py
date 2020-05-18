@@ -9,6 +9,7 @@ class Space:
         self._base_nodes = {}
         self._new_nodes = {}
         self._fixed_order = []
+
         self.store_history = store_history
         self._history = []
 

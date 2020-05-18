@@ -49,10 +49,10 @@ for i in range(STEPS):
 # visualizer
 ############
 
-drawer = Drawer2D(cell_size=10)
+# drawer = Drawer2D(cell_size=10)
 
-drawer.add_biome(Biome(checker=Marked(CELL_STATE.ALIVE), sprite=Sprite(RGBA(1, 1, 1))))
-drawer.add_biome(Biome(checker=Marked(CELL_STATE.DEAD), sprite=Sprite(RGBA(0, 0, 0))))
-drawer.add_biome(Biome(checker=All(), sprite=Sprite(RGBA(0, 0, 0))))
+# drawer.add_biome(Biome(checker=Marked(CELL_STATE.ALIVE), sprite=Sprite(RGBA(1, 1, 1))))
+# drawer.add_biome(Biome(checker=Marked(CELL_STATE.DEAD), sprite=Sprite(RGBA(0, 0, 0))))
+# drawer.add_biome(Biome(checker=All(), sprite=Sprite(RGBA(0, 0, 0))))
 
-drawer.save_history('./example.webp', space, width=WIDTH, height=HEIGHT, duration=DURATION)
+# drawer.save_history('./example.webp', space, width=WIDTH, height=HEIGHT, duration=DURATION)

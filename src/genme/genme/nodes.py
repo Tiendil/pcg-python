@@ -1,14 +1,4 @@
 
-import enum
-
-
-class OPERATION(enum.Enum):
-    ADD_TAG = 1
-    REMOVE_TAG = 2
-    COUNT = 3
-    SET_MARKER = 4
-    UNSET_MARKER = 5
-
 
 class Node:
     __slots__ = ('space', 'coordinates', 'tags', 'counters', 'markers', '_new_node')

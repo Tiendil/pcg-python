@@ -23,8 +23,12 @@ class Stream:
         return (node for node in self.nodes if self.filter(node))
 
     def __bool__(self):
-        return len(list(self)) > 0
+        try:
+            self.__iter__().__next__()
+        except StopIteration:
+            return False
 
+        return True
 
 
 class Inverter(Filter):
