@@ -20,7 +20,9 @@ class Stream:
         self.filter = filter
 
     def __iter__(self):
-        return (node for node in self.nodes if self.filter(node))
+        for node in self.nodes:
+            if self.filter(node):
+                yield node
 
     def __bool__(self):
         try:
