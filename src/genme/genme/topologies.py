@@ -23,72 +23,57 @@ def cells_square(width, height):
             yield XY(x, y)
 
 
-class BaseArea:
-    __slots__ = ('space', 'indexes', 'min_distance', 'max_distance')
+class Topology:
+    __slots__ = ('_cache', 'distance')
 
-    _TEMPLATE_CACHE = NotImplemented
-    _CACHE = NotImplemented
+    def __init__(self, distance):
+        self._cache = {}
+        self.distance = distance
 
-    def __init__(self, node, min_distance=1, max_distance=None):
-        if max_distance is None:
-            max_distance = min_distance
+    def cache(self, space, min_distance, max_distance):
+        key = (min_distance, max_distance)
 
-        self.space = node.space
-        self.min_distance = min_distance
-        self.max_distance = max_distance
+        if key in self._cache:
+            return self._cache[key]
 
-        self.indexes = self.get_cache()[node.index]
+        cache = [None] * space.size()
 
-    def get_cache(self):
-        key = (self.min_distance, self.max_distance)
+        template = self.area_template(min_distance, max_distance)
 
-        if key in self._CACHE:
-            return self._CACHE[key]
+        for center, index in space.coordinates_to_indexes.items():
+            points = [center.move(*point.xy) for point in template]
+            cache[index] = space.area_indexes(points)
 
-        cache = [None] * self.space.size()
-
-        for coordinates, index in self.space.coordinates_to_indexes.items():
-            cache[index] = self._get_indexes(coordinates)
-
-        self._CACHE[key] = cache
+        self._cache[key] = cache
 
         return cache
 
-    def _get_indexes(self, center):
-        indexes = []
-
-        for point in self._template(self.min_distance, self.max_distance):
-            real_point = center.move(*point.xy)
-
-            index = self.space.coordinates_to_indexes.get(real_point)
-
-            if index is None:
-                continue
-
-            indexes.append(index)
-
-        return tuple(indexes)
-
-    @classmethod
-    def _template(cls, min_distance, max_distance):
-        key = (min_distance, max_distance)
-
-        if key in cls._TEMPLATE_CACHE:
-            return cls._TEMPLATE_CACHE[key]
-
-        area = set()
+    def area_template(self, min_distance, max_distance):
+        area = []
 
         for dx in range(-max_distance, max_distance + 1):
             for dy in range(-max_distance, max_distance + 1):
 
                 point = XY(dx, dy)
 
-                if min_distance <= cls.distance(point) <= max_distance:
-                    area.add(point)
-
-        cls._TEMPLATE_CACHE[key] = area
+                if min_distance <= self.distance(point) <= max_distance:
+                    area.append(point)
 
         return area
+
+
+class BaseArea:
+    __slots__ = ('space', 'indexes')
+
+    TOPOLOGY = NotImplemented
+
+    def __init__(self, node, min_distance=1, max_distance=None):
+        if max_distance is None:
+            max_distance = min_distance
+
+        self.space = node.space
+
+        self.indexes = self.TOPOLOGY.cache(self.space, min_distance, max_distance)[node.index]
 
     def base(self, *filters):
         return self.space.base(*filters, indexes=self.indexes)
@@ -102,29 +87,14 @@ class BaseArea:
 
 class Euclidean(BaseArea):
     __slots__ = ()
-    _TEMPLATE_CACHE = {}
-    _CACHE = {}
-
-    @classmethod
-    def distance(self, a, b=XY(0, 0)):
-        return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
+    TOPOLOGY = Topology(lambda a, b=XY(0, 0): math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2))
 
 
 class Manhattan(BaseArea):
     __slots__ = ()
-    _TEMPLATE_CACHE = {}
-    _CACHE = {}
-
-    @classmethod
-    def distance(self, a, b=XY(0, 0)):
-        return abs(a.x-b.x) + abs(a.y-b.y)
+    TOPOLOGY = Topology(lambda a, b=XY(0, 0): (a.x-b.x) + abs(a.y-b.y))
 
 
 class SquareRadius(BaseArea):
     __slots__ = ()
-    _TEMPLATE_CACHE = {}
-    _CACHE = {}
-
-    @classmethod
-    def distance(self, a, b=XY(0, 0)):
-        return max(abs(a.x-b.x), abs(a.y-b.y))
+    TOPOLOGY = Topology(lambda a, b=XY(0, 0): max(abs(a.x-b.x), abs(a.y-b.y)))

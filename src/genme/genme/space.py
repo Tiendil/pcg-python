@@ -3,7 +3,7 @@ import contextlib
 
 
 class Space:
-    __slots__ = ('_base_nodes', '_new_nodes', 'coordinates_to_indexes', 'store_history', '_history', '_indexes')
+    __slots__ = ('_base_nodes', '_new_nodes', 'coordinates_to_indexes', 'store_history', '_history')
 
     def __init__(self, store_history=False):
         self._base_nodes = []
@@ -13,8 +13,6 @@ class Space:
 
         self.store_history = store_history
         self._history = []
-
-        self._indexes = []
 
     def size(self):
         return len(self.coordinates_to_indexes)
@@ -35,14 +33,25 @@ class Space:
 
             self._base_nodes[i] = node
 
-        self._indexes = list(range(0, self.size()))
+    def area_indexes(self, coordinates):
+        indexes = []
+
+        for point in coordinates:
+            index = self.coordinates_to_indexes.get(point)
+
+            if index is None:
+                continue
+
+            indexes.append(index)
+
+        return tuple(indexes)
 
     def register_new_node(self, node):
         self._new_nodes[node.index] = node
 
     def base(self, *filters, indexes=None):
         if indexes is None:
-            indexes = self._indexes
+            indexes = range(self.size())
 
         for i in indexes:
             node = self._base_nodes[i]
@@ -55,7 +64,7 @@ class Space:
 
     def new(self, *filters, indexes=None):
         if indexes is None:
-            indexes = self._indexes
+            indexes = range(self.size())
 
         for i in indexes:
             node = self._new_nodes[i]
@@ -71,7 +80,7 @@ class Space:
 
     def actual(self, *filters, indexes=None):
         if indexes is None:
-            indexes = self._indexes
+            indexes = range(self.size())
 
         for i in indexes:
             node = self._new_nodes[i] or self._base_nodes[i]
