@@ -24,47 +24,41 @@ def cells_square(width, height):
 
 
 class BaseArea:
-    __slots__ = ('space', 'center', 'min_distance', 'max_distance', 'include')
+    __slots__ = ('space', 'indexes', 'min_distance', 'max_distance')
 
     _TEMPLATE_CACHE = NotImplemented
     _CACHE = NotImplemented
 
-    def __init__(self, node, min_distance=1, max_distance=None, include=False):
+    def __init__(self, node, min_distance=1, max_distance=None):
         if max_distance is None:
             max_distance = min_distance
 
         self.space = node.space
-        self.center = node.coordinates
         self.min_distance = min_distance
         self.max_distance = max_distance
-        self.include = include
 
-    def base(self):
-        return [self.space.base_node(i)
-                for i in self.indexes()]
+        self.indexes = self.get_cache()[node.index]
 
-    def new(self):
-        return [node:=self.space.new_node(i)
-                for i in self.indexes()
-                if node is not None]
-
-    def actual(self):
-        return [self.space.actual_node(i)
-                for i in self.indexes()]
-
-    def indexes(self):
-        key = (self.center, self.min_distance, self.max_distance, self.include)
+    def get_cache(self):
+        key = (self.min_distance, self.max_distance)
 
         if key in self._CACHE:
             return self._CACHE[key]
 
+        cache = [None] * len(self.space.indexes)
+
+        for coordinates, index in self.space.indexes.items():
+            cache[index] = self._get_indexes(coordinates)
+
+        self._CACHE[key] = cache
+
+        return cache
+
+    def _get_indexes(self, center):
         indexes = []
 
         for point in self._template(self.min_distance, self.max_distance):
-            if point == self.center and not self.include:
-                continue
-
-            real_point = self.center.move(*point.xy)
+            real_point = center.move(*point.xy)
 
             index = self.space.indexes.get(real_point)
 
@@ -73,11 +67,7 @@ class BaseArea:
 
             indexes.append(index)
 
-        indexes = tuple(indexes)
-
-        self._CACHE[key] = indexes
-
-        return indexes
+        return tuple(indexes)
 
     @classmethod
     def _template(cls, min_distance, max_distance):
@@ -99,6 +89,28 @@ class BaseArea:
         cls._TEMPLATE_CACHE[key] = area
 
         return area
+
+    def base(self, *filters):
+        for i in self.indexes:
+            node = self.space.base_node(i)
+
+            for filter in filters:
+                if not filter(node):
+                    break
+            else:
+                yield node
+
+    # def new(self, *filters):
+    #     return [node
+    #             for i in self.indexes()
+    #             if (node:=self.space.new_node(i)) is not None and
+    #                all(filter(node) for filter in filters)]
+
+    # def actual(self, *filters):
+    #     return [node
+    #             for i in self.indexes()
+    #             if all(filter(node:=self.space.actual_node(i)) for filter in filters)]
+
 
 
 class Euclidean(BaseArea):

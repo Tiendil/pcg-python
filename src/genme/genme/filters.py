@@ -67,4 +67,4 @@ class Marked(Filter):
         self.marker = marker
 
     def __call__(self, node):
-        return node.has_mark(self.marker)
+        return self.marker(node)

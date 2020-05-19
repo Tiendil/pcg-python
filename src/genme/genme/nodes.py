@@ -1,26 +1,59 @@
 
 
-class Node:
-    __slots__ = ('space', 'coordinates', 'index', 'tags', 'counters', 'markers', '_new_node')
+class Property:
+    __slots__ = ('index',)
+
+    def __init__(self, index):
+        self.index = index
+
+    def apply_to(self, node):
+        node.properties[self.index] = self
+
+    def __call__(self, node):
+        return node.properties[self.index] is self
+
+
+class Fabric:
+    __slots__ = ('property_groups',)
 
     def __init__(self):
-        self.space = None
-        self.coordinates = None
+        self.property_groups = {}
+
+    def properties_size(self):
+        return len(self.property_groups)
+
+    def Property(self, group):
+        index = self.property_groups.get(group)
+
+        if index is None:
+            index = self.properties_size()
+            self.property_groups[group] = index
+
+        return Property(index)
+
+    def Node(self, *properties):
+        node = Node(properties=[None] * self.properties_size())
+        for property in properties:
+            property.apply_to(node)
+        return node
+
+
+class Node:
+    __slots__ = ('index', 'coordinates', 'space', 'properties', '_new_node')
+
+    def __init__(self, properties):
         self.index = None
-        self.tags = set()
-        self.counters = {}
-        self.markers = {}
+        self.coordinates = None
         self._new_node = None
+        self.space = None
+        self.properties = properties
 
     def clone(self):
-        clone = Node()
-        clone.space = self.space
-        clone.coordinates = self.coordinates
+        clone = Node(properties=list(self.properties))
         clone.index = self.index
-        clone.tags |= set(self.tags)
-        clone.counters.update(self.counters)
-        clone.markers.update(self.markers)
-
+        clone.coordinates = self.coordinates
+        clone.space = self.space
+        clone._new_node = None
         return clone
 
     def new_node(self):
@@ -32,23 +65,11 @@ class Node:
 
         return self._new_node
 
-    def mark(self, marker):
-        self.new_node().markers[marker.__class__] = marker
-
-    def tag(self, tag):
-        self.new_node().tags.add(tag)
-
-    def untag(self, tag):
+    def __ilshift__(self, other):
         new_node = self.new_node()
 
-        if tag in new_node.tags:
-            new_node.tags.remove(tag)
-
-    def count(self, counter, value):
-        self.new_node().counters[counter] += value
-
-    def has_mark(self, marker):
-        return self.markers.get(marker.__class__) == marker
-
-    def __iter__(self):
-        yield self
+        if hasattr(other, '__iter__'):
+            for property in other:
+                property.apply_to(new_node)
+        else:
+            other.apply_to(new_node)

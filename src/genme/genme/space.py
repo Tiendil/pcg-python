@@ -15,6 +15,8 @@ class Space:
         self._history = []
 
     def initialize(self, base_node, nodes_coordinates):
+        base_node.space = self
+
         for i, coordinates in enumerate(nodes_coordinates):
             self.indexes[coordinates] = i
 
@@ -25,7 +27,6 @@ class Space:
             node = base_node.clone()
             node.coordinates = coordinates
             node.index = i
-            node.space = self
 
             self._base_nodes[i] = node
 
@@ -41,17 +42,25 @@ class Space:
     def actual_node(self, index):
         return self._new_nodes[index] or self._base_nodes[index]
 
-    def base(self):
-        return self._base_nodes
-
-    def new(self):
-        for node in self._new_nodes:
-            if node is not None:
+    def base(self, *filters):
+        for node in self._base_nodes:
+            for filter in filters:
+                if not filter(node):
+                    break
+            else:
                 yield node
 
-    def actual(self):
-        for new_node, base_node in zip(self._new_nodes, self._base_nodes):
-            yield new_node or base_node
+    # def new(self, *filters):
+    #     for node in self._new_nodes:
+    #         if node is not None and all(filter(node) for filter in filters):
+    #             yield node
+
+    # def actual(self, *filters):
+    #     for new_node, base_node in zip(self._new_nodes, self._base_nodes):
+    #         node = new_node or base_node
+
+    #         if all(filter(node) for filter in filters):
+    #             yield node
 
     @contextlib.contextmanager
     def step(self):
