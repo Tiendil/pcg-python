@@ -46,18 +46,18 @@ with space.step():
 
 with space.step():
     for node in space.base(Fraction(0.80), GRASS):
-        if Euclidean(node, 1, 3).base(WATER):
+        if Euclidean(node, 1, 3).base(WATER) | Exists():
             node <<= WATER
 
 with space.step():
     for node in space.base(GRASS):
-        if SquareRadius(node).base(WATER):
+        if SquareRadius(node).base(WATER) | Exists():
             node <<= SAND
 
 for _ in range(3):
     with space.step():
         for node in space.base(Fraction(0.1), GRASS):
-            if SquareRadius(node).base(SAND):
+            if SquareRadius(node).base(SAND) | Exists():
                 node <<= SAND
 
 for _ in range(3):

@@ -45,9 +45,9 @@ class BaseArea:
         if key in self._CACHE:
             return self._CACHE[key]
 
-        cache = [None] * len(self.space.indexes)
+        cache = [None] * self.space.size()
 
-        for coordinates, index in self.space.indexes.items():
+        for coordinates, index in self.space.coordinates_to_indexes.items():
             cache[index] = self._get_indexes(coordinates)
 
         self._CACHE[key] = cache
@@ -60,7 +60,7 @@ class BaseArea:
         for point in self._template(self.min_distance, self.max_distance):
             real_point = center.move(*point.xy)
 
-            index = self.space.indexes.get(real_point)
+            index = self.space.coordinates_to_indexes.get(real_point)
 
             if index is None:
                 continue
@@ -91,49 +91,13 @@ class BaseArea:
         return area
 
     def base(self, *filters):
-        result = []
-
-        for i in self.indexes:
-            node = self.space.base_node(i)
-
-            for filter in filters:
-                if not filter(node):
-                    break
-            else:
-                result.append(node)
-
-        return result
+        return self.space.base(*filters, indexes=self.indexes)
 
     def new(self, *filters):
-        result = []
-
-        for i in self.indexes:
-            node = self.space.new_node(i)
-
-            if node is None:
-                continue
-
-            for filter in filters:
-                if not filter(node):
-                    break
-            else:
-                result.append(node)
-
-        return result
+        return self.space.new(*filters, indexes=self.indexes)
 
     def actual(self, *filters):
-        result = []
-
-        for i in self.indexes:
-            node = self.space.actual_node(i)
-
-            for filter in filters:
-                if not filter(node):
-                    break
-            else:
-                result.append(node)
-
-        return result
+        return self.space.actual(*filters, indexes=self.indexes)
 
 
 class Euclidean(BaseArea):
