@@ -32,13 +32,13 @@ space.initialize(base_node, cells_square(width=WIDTH, height=HEIGHT))
 
 
 with space.step():
-    for node in space.base() | Fraction(0.2):
+    for node in space.base(Fraction(0.2)):
         node <<= ALIVE
 
 #########################################
 # warm up for better performance analisis
-for node in space.base(ALIVE):
-    list(SquareRadius(node).base(ALIVE))
+# for node in space.base(ALIVE):
+#     list(SquareRadius(node).base(ALIVE))
 #########################################
 
 for i in range(STEPS):
@@ -57,10 +57,10 @@ for i in range(STEPS):
 # visualizer
 ############
 
-# drawer = Drawer2D(cell_size=5)
+drawer = Drawer2D(cell_size=5)
 
-# drawer.add_biome(Biome(checker=Marked(ALIVE), sprite=Sprite(RGBA(1, 1, 1))))
-# drawer.add_biome(Biome(checker=Marked(DEAD), sprite=Sprite(RGBA(0, 0, 0))))
-# drawer.add_biome(Biome(checker=All(), sprite=Sprite(RGBA(0, 0, 0))))
+drawer.add_biome(Biome(checker=ALIVE, sprite=Sprite(RGBA(1, 1, 1))))
+drawer.add_biome(Biome(checker=DEAD, sprite=Sprite(RGBA(0, 0, 0))))
+drawer.add_biome(Biome(checker=All(), sprite=Sprite(RGBA(0, 0, 0))))
 
-# drawer.save_history('./example.webp', space, width=WIDTH, height=HEIGHT, duration=DURATION)
+drawer.save_history('./example.webp', space, width=WIDTH, height=HEIGHT, duration=DURATION)

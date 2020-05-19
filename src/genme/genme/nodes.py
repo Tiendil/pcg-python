@@ -1,5 +1,8 @@
 
 
+from .filters import Inverter
+
+
 class Property:
     __slots__ = ('index',)
 
@@ -11,6 +14,9 @@ class Property:
 
     def __call__(self, node):
         return node.properties[self.index] is self
+
+    def __invert__(self):
+        return Inverter(self)
 
 
 class Fabric:

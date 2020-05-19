@@ -91,6 +91,8 @@ class BaseArea:
         return area
 
     def base(self, *filters):
+        result = []
+
         for i in self.indexes:
             node = self.space.base_node(i)
 
@@ -98,19 +100,40 @@ class BaseArea:
                 if not filter(node):
                     break
             else:
-                yield node
+                result.append(node)
 
-    # def new(self, *filters):
-    #     return [node
-    #             for i in self.indexes()
-    #             if (node:=self.space.new_node(i)) is not None and
-    #                all(filter(node) for filter in filters)]
+        return result
 
-    # def actual(self, *filters):
-    #     return [node
-    #             for i in self.indexes()
-    #             if all(filter(node:=self.space.actual_node(i)) for filter in filters)]
+    def new(self, *filters):
+        result = []
 
+        for i in self.indexes:
+            node = self.space.new_node(i)
+
+            if node is None:
+                continue
+
+            for filter in filters:
+                if not filter(node):
+                    break
+            else:
+                result.append(node)
+
+        return result
+
+    def actual(self, *filters):
+        result = []
+
+        for i in self.indexes:
+            node = self.space.actual_node(i)
+
+            for filter in filters:
+                if not filter(node):
+                    break
+            else:
+                result.append(node)
+
+        return result
 
 
 class Euclidean(BaseArea):

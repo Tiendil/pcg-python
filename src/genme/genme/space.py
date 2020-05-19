@@ -50,17 +50,26 @@ class Space:
             else:
                 yield node
 
-    # def new(self, *filters):
-    #     for node in self._new_nodes:
-    #         if node is not None and all(filter(node) for filter in filters):
-    #             yield node
+    def new(self, *filters):
+        for node in self._new_nodes:
+            if node is None:
+                continue
 
-    # def actual(self, *filters):
-    #     for new_node, base_node in zip(self._new_nodes, self._base_nodes):
-    #         node = new_node or base_node
+            for filter in filters:
+                if not filter(node):
+                    break
+            else:
+                yield node
 
-    #         if all(filter(node) for filter in filters):
-    #             yield node
+    def actual(self, *filters):
+        for new_node, base_node in zip(self._new_nodes, self._base_nodes):
+            node = new_node or base_node
+
+            for filter in filters:
+                if not filter(node):
+                    break
+            else:
+                yield node
 
     @contextlib.contextmanager
     def step(self):

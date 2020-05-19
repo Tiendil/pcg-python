@@ -21,49 +21,60 @@ class TERRAIN(enum.Enum):
 WIDTH = 80
 HEIGHT = 80
 
+
+class PROPERTY_GROUP(enum.Enum):
+    TERRAIN = 1
+
+
+node_fabric = Fabric()
+
+TEST = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
+GRASS = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
+WATER = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
+SAND = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
+FOREST = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
+
+base_node = node_fabric.Node(GRASS)
+
 space = Space(store_history=True)
-space.initialize(Node(), cells_square(width=WIDTH, height=HEIGHT))
+space.initialize(base_node, cells_square(width=WIDTH, height=HEIGHT))
 
 
 with space.step():
-    for node in space.base():
-        node.mark(TERRAIN.GRASS)
+    for node in space.base(Fraction(0.01)):
+        node <<= WATER
 
 with space.step():
-    for node in space.base() | Fraction(0.01):
-        node.mark(TERRAIN.WATER)
+    for node in space.base(Fraction(0.80), GRASS):
+        if Euclidean(node, 1, 3).base(WATER):
+            node <<= WATER
 
 with space.step():
-    for node in space.base() | Fraction(0.80) | Marked(TERRAIN.GRASS):
-        if Euclidean(node, 1, 3).base() | Marked(TERRAIN.WATER):
-            node.mark(TERRAIN.WATER)
-
-with space.step():
-    for node in space.base() | Marked(TERRAIN.GRASS):
-        if SquareRadius(node, 1).base() | Marked(TERRAIN.WATER):
-            node.mark(TERRAIN.SAND)
+    for node in space.base(GRASS):
+        if SquareRadius(node).base(WATER):
+            node <<= SAND
 
 for _ in range(3):
     with space.step():
-        for node in space.base() | Fraction(0.1) | Marked(TERRAIN.GRASS):
-            if SquareRadius(node, 1).base() | Marked(TERRAIN.SAND):
-                node.mark(TERRAIN.SAND)
+        for node in space.base(Fraction(0.1), GRASS):
+            if SquareRadius(node).base(SAND):
+                node <<= SAND
 
 for _ in range(3):
     with space.step():
-        for node in space.base() | Marked(TERRAIN.SAND):
-            if SquareRadius(node, 1).base() | Marked(TERRAIN.WATER) | Between(6, 10):
-                node.mark(TERRAIN.WATER)
+        for node in space.base(SAND):
+            if SquareRadius(node).base(WATER) | Between(6, 10):
+                node <<= WATER
 
 with space.step():
-    for node in space.base() | Fraction(0.05) | Marked(TERRAIN.GRASS):
-        node.mark(TERRAIN.FOREST)
+    for node in space.base(Fraction(0.05), GRASS):
+        node <<= FOREST
 
 with space.step():
-    for node in space.base() | Fraction(0.4) | Marked(TERRAIN.GRASS):
-        if (SquareRadius(node, 2).base() | Marked(TERRAIN.FOREST) and
-            SquareRadius(node, 1).actual() | Marked(TERRAIN.FOREST) | ~Exists()):
-            node.mark(TERRAIN.FOREST)
+    for node in space.base(Fraction(0.2), GRASS):
+        if (SquareRadius(node, 2).base(FOREST) and
+            SquareRadius(node).actual(FOREST) | ~Exists()):
+            node <<= FOREST
 
 
 ############
@@ -72,10 +83,10 @@ with space.step():
 
 drawer = Drawer2D(cell_size=10)
 
-drawer.add_biome(Biome(checker=Marked(TERRAIN.GRASS), sprite=Sprite(RGBA(0, 1, 0))))
-drawer.add_biome(Biome(checker=Marked(TERRAIN.WATER), sprite=Sprite(RGBA(0, 0, 1))))
-drawer.add_biome(Biome(checker=Marked(TERRAIN.SAND), sprite=Sprite(RGBA(1, 1, 0))))
-drawer.add_biome(Biome(checker=Marked(TERRAIN.FOREST), sprite=Sprite(RGBA(0, 0.5, 0))))
+drawer.add_biome(Biome(checker=GRASS, sprite=Sprite(RGBA(0, 1, 0))))
+drawer.add_biome(Biome(checker=WATER, sprite=Sprite(RGBA(0, 0, 1))))
+drawer.add_biome(Biome(checker=SAND, sprite=Sprite(RGBA(1, 1, 0))))
+drawer.add_biome(Biome(checker=FOREST, sprite=Sprite(RGBA(0, 0.5, 0))))
 drawer.add_biome(Biome(checker=All(), sprite=Sprite(RGBA(0, 0, 0))))
 
 # canvas = drawer.draw(space.base(), width=WIDTH, height=HEIGHT)
