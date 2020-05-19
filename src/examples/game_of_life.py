@@ -36,20 +36,19 @@ for i in range(STEPS):
     print(f'step {i+1}/{STEPS}')
 
     with space.step():
-        for node in space.base():
-            if node | Marked(CELL_STATE.ALIVE):
-                if SquareRadius(node).base() | Marked(CELL_STATE.ALIVE) | ~Between(2, 3):
-                    node.mark(CELL_STATE.DEAD)
+        for node in space.base() | Marked(CELL_STATE.ALIVE):
+            if SquareRadius(node).base() | Marked(CELL_STATE.ALIVE) | ~Between(2, 3):
+                node.mark(CELL_STATE.DEAD)
 
-            else:
-                if SquareRadius(node).base() | Marked(CELL_STATE.ALIVE) | Count(3):
-                    node.mark(CELL_STATE.ALIVE)
+        for node in space.base() | Marked(CELL_STATE.DEAD):
+            if SquareRadius(node).base() | Marked(CELL_STATE.ALIVE) | Count(3):
+                node.mark(CELL_STATE.ALIVE)
 
 ############
 # visualizer
 ############
 
-# drawer = Drawer2D(cell_size=10)
+# drawer = Drawer2D(cell_size=5)
 
 # drawer.add_biome(Biome(checker=Marked(CELL_STATE.ALIVE), sprite=Sprite(RGBA(1, 1, 1))))
 # drawer.add_biome(Biome(checker=Marked(CELL_STATE.DEAD), sprite=Sprite(RGBA(0, 0, 0))))

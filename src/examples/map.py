@@ -62,7 +62,7 @@ with space.step():
 with space.step():
     for node in space.base() | Fraction(0.4) | Marked(TERRAIN.GRASS):
         if (SquareRadius(node, 2).base() | Marked(TERRAIN.FOREST) and
-            SquareRadius(node, 1).actual() | Marked(TERRAIN.FOREST)):
+            SquareRadius(node, 1).actual() | Marked(TERRAIN.FOREST) | ~Exists()):
             node.mark(TERRAIN.FOREST)
 
 

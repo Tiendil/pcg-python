@@ -55,3 +55,13 @@ class Between(Aggregator):
                 return False
 
         return self.min <= count <= self.max
+
+
+class Exists(Aggregator):
+    __slots__ = ()
+
+    def __ror__(self, other):
+        for item in other:
+            return True
+
+        return False

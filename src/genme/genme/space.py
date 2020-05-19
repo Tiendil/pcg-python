@@ -42,7 +42,7 @@ class Space:
         return self._new_nodes[index] or self._base_nodes[index]
 
     def base(self):
-        return self._base_nodes.__iter__()
+        return self._base_nodes
 
     def new(self):
         for node in self._new_nodes:

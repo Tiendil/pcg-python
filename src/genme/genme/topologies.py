@@ -40,16 +40,17 @@ class BaseArea:
         self.include = include
 
     def base(self):
-        for i in self.indexes():
-            yield self.space.base_node(i)
+        return [self.space.base_node(i)
+                for i in self.indexes()]
 
     def new(self):
-        for i in self.indexes():
-            yield self.space.new_node(i)
+        return [node:=self.space.new_node(i)
+                for i in self.indexes()
+                if node is not None]
 
     def actual(self):
-        for i in self.indexes():
-            yield self.space.actual_node(i)
+        return [self.space.actual_node(i)
+                for i in self.indexes()]
 
     def indexes(self):
         key = (self.center, self.min_distance, self.max_distance, self.include)
@@ -71,6 +72,8 @@ class BaseArea:
                 continue
 
             indexes.append(index)
+
+        indexes = tuple(indexes)
 
         self._CACHE[key] = indexes
 
