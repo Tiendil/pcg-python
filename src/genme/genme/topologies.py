@@ -1,71 +1,37 @@
-import math
-import dataclasses
-
-
-@dataclasses.dataclass(frozen=True, order=True)
-class XY:
-    __slots__ = ('x', 'y')
-
-    x: int
-    y: int
-
-    @property
-    def xy(self):
-        return self.x, self.y
-
-    def move(self, dx, dy):
-        return XY(self.x + dx, self.y + dy)
-
-
-def cells_square(width, height):
-    for y in range(height):
-        for x in range(width):
-            yield XY(x, y)
 
 
 class Topology:
-    __slots__ = ('_cache', 'distance')
+    __slots__ = ('connectomes', 'indexes')
 
-    def __init__(self, distance):
-        self._cache = {}
-        self.distance = distance
+    def __init__(self, coordinates):
+        self.connectomes = {}
+        self.indexes = {xy: None for xy in coordinates}
 
-    def cache(self, space, min_distance, max_distance):
-        key = (min_distance, max_distance)
+    def size(self):
+        return len(self.indexes)
 
-        if key in self._cache:
-            return self._cache[key]
+    def coordinates(self):
+        return self.indexes.keys()
 
-        cache = [None] * space.size()
+    def register_index(self, coordinates, index):
+        self.indexes[coordinates] = index
 
-        template = self.area_template(min_distance, max_distance)
-
-        for center, index in space.coordinates_to_indexes.items():
-            points = [center.move(*point.xy) for point in template]
-            cache[index] = space.area_indexes(points)
-
-        self._cache[key] = cache
-
-        return cache
-
-    def area_template(self, min_distance, max_distance):
+    def area_indexes(self, coordinates):
         area = []
 
-        for dx in range(-max_distance, max_distance + 1):
-            for dy in range(-max_distance, max_distance + 1):
+        for point in coordinates:
+            index = self.indexes.get(point)
 
-                point = XY(dx, dy)
+            if index is None:
+                continue
 
-                if min_distance <= self.distance(point) <= max_distance:
-                    area.append(point)
+            area.append(index)
 
-        return area
+        return tuple(area)
 
 
 class BaseArea:
     __slots__ = ('space', 'indexes')
-
-    TOPOLOGY = NotImplemented
 
     def __init__(self, node, min_distance=1, max_distance=None):
         if max_distance is None:
@@ -73,7 +39,18 @@ class BaseArea:
 
         self.space = node.space
 
-        self.indexes = self.TOPOLOGY.cache(self.space, min_distance, max_distance)[node.index]
+        connectome_uid = (self.__class__.__name__, min_distance, max_distance)
+
+        if connectome_uid not in self.space.topology.connectomes:
+            connectome = self.connectome(self.space.topology, min_distance, max_distance)
+            self.space.topology.connectomes[connectome_uid] = connectome
+        else:
+            connectome = self.space.topology.connectomes[connectome_uid]
+
+        self.indexes = connectome[node.index]
+
+    def connectome(self, topology, min_distance, max_distance):
+        raise NotImplementedError('must be overriden in child classes')
 
     def base(self, *filters):
         return self.space.base(*filters, indexes=self.indexes)
@@ -83,18 +60,3 @@ class BaseArea:
 
     def actual(self, *filters):
         return self.space.actual(*filters, indexes=self.indexes)
-
-
-class Euclidean(BaseArea):
-    __slots__ = ()
-    TOPOLOGY = Topology(lambda a, b=XY(0, 0): math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2))
-
-
-class Manhattan(BaseArea):
-    __slots__ = ()
-    TOPOLOGY = Topology(lambda a, b=XY(0, 0): (a.x-b.x) + abs(a.y-b.y))
-
-
-class SquareRadius(BaseArea):
-    __slots__ = ()
-    TOPOLOGY = Topology(lambda a, b=XY(0, 0): max(abs(a.x-b.x), abs(a.y-b.y)))

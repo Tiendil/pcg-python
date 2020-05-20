@@ -3,48 +3,34 @@ import contextlib
 
 
 class Space:
-    __slots__ = ('_base_nodes', '_new_nodes', 'coordinates_to_indexes', 'store_history', '_history')
+    __slots__ = ('_base_nodes', '_new_nodes', 'topology', 'store_history', '_history')
 
-    def __init__(self, store_history=False):
+    def __init__(self, topology, store_history=False):
         self._base_nodes = []
         self._new_nodes = []
 
-        self.coordinates_to_indexes = {}
+        self.topology = topology
 
         self.store_history = store_history
         self._history = []
 
     def size(self):
-        return len(self.coordinates_to_indexes)
+        return len(self._base_nodes)
 
-    def initialize(self, base_node, nodes_coordinates):
+    def initialize(self, base_node):
         base_node.space = self
 
-        for i, coordinates in enumerate(nodes_coordinates):
-            self.coordinates_to_indexes[coordinates] = i
+        self._base_nodes = [None] * self.topology.size()
+        self._new_nodes = [None] * self.topology.size()
 
-        self._base_nodes = [None] * self.size()
-        self._new_nodes = [None] * self.size()
-
-        for coordinates, i in self.coordinates_to_indexes.items():
+        for i, coordinates in enumerate(self.topology.coordinates()):
             node = base_node.clone()
             node.coordinates = coordinates
             node.index = i
 
             self._base_nodes[i] = node
 
-    def area_indexes(self, coordinates):
-        indexes = []
-
-        for point in coordinates:
-            index = self.coordinates_to_indexes.get(point)
-
-            if index is None:
-                continue
-
-            indexes.append(index)
-
-        return tuple(indexes)
+            self.topology.register_index(coordinates, i)
 
     def register_new_node(self, node):
         self._new_nodes[node.index] = node

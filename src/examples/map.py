@@ -8,14 +8,7 @@ from genme.aggregators import *
 from genme.topologies import *
 from genme.colors import *
 from genme.space import *
-
-
-class TERRAIN(enum.Enum):
-    TEST = 0
-    GRASS = 1
-    WATER = 2
-    SAND = 3
-    FOREST = 4
+from genme.d2 import *
 
 
 WIDTH = 80
@@ -34,10 +27,10 @@ WATER = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
 SAND = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
 FOREST = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
 
-base_node = node_fabric.Node(GRASS)
+topology = Topology(coordinates=cells_square(width=WIDTH, height=HEIGHT))
 
-space = Space(store_history=True)
-space.initialize(base_node, cells_square(width=WIDTH, height=HEIGHT))
+space = Space(topology, store_history=True)
+space.initialize(node_fabric.Node(GRASS))
 
 
 with space.step():

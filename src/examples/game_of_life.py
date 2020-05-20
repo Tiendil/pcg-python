@@ -8,6 +8,7 @@ from genme.aggregators import *
 from genme.topologies import *
 from genme.colors import *
 from genme.space import *
+from genme.d2 import *
 
 
 STEPS = 100
@@ -25,21 +26,21 @@ node_fabric = Fabric()
 DEAD = node_fabric.Property(PROPERTY_GROUP.STATE)
 ALIVE = node_fabric.Property(PROPERTY_GROUP.STATE)
 
-base_node = node_fabric.Node(DEAD)
+topology = Topology(coordinates=cells_square(width=WIDTH, height=HEIGHT))
 
-space = Space(store_history=True)
-space.initialize(base_node, cells_square(width=WIDTH, height=HEIGHT))
+space = Space(topology, store_history=True)
+space.initialize(node_fabric.Node(DEAD))
 
-
-with space.step():
-    for node in space.base(Fraction(0.2)):
-        node <<= ALIVE
 
 #########################################
 # warm up for better performance analisis
 # for node in space.base(ALIVE):
 #     list(SquareRadius(node).base(ALIVE))
 #########################################
+
+with space.step():
+    for node in space.base(Fraction(0.2)):
+        node <<= ALIVE
 
 for i in range(STEPS):
     print(f'step {i+1}/{STEPS}')
