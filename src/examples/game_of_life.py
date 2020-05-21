@@ -12,7 +12,6 @@ from genme.d2 import *
 
 
 STEPS = 100
-DURATION = 100
 WIDTH = 80
 HEIGHT = 80
 
@@ -26,9 +25,29 @@ node_fabric = Fabric()
 DEAD = node_fabric.Property(PROPERTY_GROUP.STATE)
 ALIVE = node_fabric.Property(PROPERTY_GROUP.STATE)
 
+
+############
+# visualizer
+############
+
+drawer = Drawer2D(cell_size=5,
+                  width=WIDTH,
+                  height=HEIGHT,
+                  duration=100,
+                  filename='./example.webp')
+
+drawer.add_biome(Biome(checker=ALIVE, sprite=Sprite(RGBA(1, 1, 1))))
+drawer.add_biome(Biome(checker=DEAD, sprite=Sprite(RGBA(0, 0, 0))))
+drawer.add_biome(Biome(checker=All(), sprite=Sprite(RGBA(0, 0, 0))))
+
+
+###########
+# generator
+###########
+
 topology = Topology(coordinates=cells_square(width=WIDTH, height=HEIGHT))
 
-space = Space(topology, store_history=True)
+space = Space(topology, recorders=[drawer])
 space.initialize(node_fabric.Node(DEAD))
 
 
@@ -54,14 +73,5 @@ for i in range(STEPS):
             if SquareRadius(node).base(ALIVE) | Count(3):
                 node <<= ALIVE
 
-############
-# visualizer
-############
 
-drawer = Drawer2D(cell_size=5)
-
-drawer.add_biome(Biome(checker=ALIVE, sprite=Sprite(RGBA(1, 1, 1))))
-drawer.add_biome(Biome(checker=DEAD, sprite=Sprite(RGBA(0, 0, 0))))
-drawer.add_biome(Biome(checker=All(), sprite=Sprite(RGBA(0, 0, 0))))
-
-drawer.save_history('./example.webp', space, width=WIDTH, height=HEIGHT, duration=DURATION)
+drawer.finish()

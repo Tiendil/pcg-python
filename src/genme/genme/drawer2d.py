@@ -26,11 +26,16 @@ class Biome:
 
 
 class Drawer2D:
-    __slots__ = ('biomes', 'cell_size')
+    __slots__ = ('biomes', 'cell_size', 'width', 'height', 'duration', 'frames', 'filename')
 
-    def __init__(self, cell_size):
+    def __init__(self, cell_size, width, height, duration, filename):
         self.biomes = []
         self.cell_size = cell_size
+        self.width = width
+        self.height = height
+        self.duration = duration
+        self.frames = []
+        self.filename = filename
 
     def add_biome(self, biome):
         biome.sprite.prepair(self.cell_size)
@@ -57,16 +62,14 @@ class Drawer2D:
 
         return canvas
 
-    def save_history(self, filename, space, width, height, duration=1000):
-        images = []
+    def record(self, space):
+        canvas = self.draw(space.base(), width=self.width, height=self.height)
+        self.frames.append(canvas)
 
-        for history in space._history + [space._base_nodes]:
-            canvas = self.draw(history, width=width, height=height)
-            images.append(canvas)
-
-        images[0].save(filename,
-                       lossles=True,
-                       quality=100,
-                       duration=duration,
-                       save_all=True,
-                       append_images=images[1:] )
+    def finish(self):
+        self.frames[0].save(self.filename,
+                            lossles=True,
+                            quality=100,
+                            duration=self.duration,
+                            save_all=True,
+                            append_images=self.frames[1:] )

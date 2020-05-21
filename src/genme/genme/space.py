@@ -3,16 +3,15 @@ import contextlib
 
 
 class Space:
-    __slots__ = ('_base_nodes', '_new_nodes', 'topology', 'store_history', '_history')
+    __slots__ = ('_base_nodes', '_new_nodes', 'topology', 'recorders')
 
-    def __init__(self, topology, store_history=False):
+    def __init__(self, topology, recorders=()):
         self._base_nodes = []
         self._new_nodes = []
 
         self.topology = topology
 
-        self.store_history = store_history
-        self._history = []
+        self.recorders = recorders
 
     def size(self):
         return len(self._base_nodes)
@@ -31,6 +30,8 @@ class Space:
             self._base_nodes[i] = node
 
             self.topology.register_index(coordinates, i)
+
+        self.record_state()
 
     def register_new_node(self, node):
         self._new_nodes[node.index] = node
@@ -77,15 +78,19 @@ class Space:
             else:
                 yield node
 
+    def record_state(self):
+        for recorder in self.recorders:
+            recorder.record(self)
+
     @contextlib.contextmanager
     def step(self):
 
         yield
 
-        if self.store_history:
-            self._history.append(list(self._base_nodes))
-
         for i, node in enumerate(self._new_nodes):
             if node is not None:
                 self._base_nodes[i] = node
                 self._new_nodes[i] = None
+
+
+        self.record_state()

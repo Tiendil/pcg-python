@@ -27,9 +27,30 @@ WATER = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
 SAND = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
 FOREST = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
 
+############
+# visualizer
+############
+
+drawer = Drawer2D(cell_size=10,
+                  width=WIDTH,
+                  height=HEIGHT,
+                  duration=1000,
+                  filename='./example.webp')
+
+drawer.add_biome(Biome(checker=GRASS, sprite=Sprite(RGBA(0, 1, 0))))
+drawer.add_biome(Biome(checker=WATER, sprite=Sprite(RGBA(0, 0, 1))))
+drawer.add_biome(Biome(checker=SAND, sprite=Sprite(RGBA(1, 1, 0))))
+drawer.add_biome(Biome(checker=FOREST, sprite=Sprite(RGBA(0, 0.5, 0))))
+drawer.add_biome(Biome(checker=All(), sprite=Sprite(RGBA(0, 0, 0))))
+
+
+###########
+# generator
+###########
+
 topology = Topology(coordinates=cells_square(width=WIDTH, height=HEIGHT))
 
-space = Space(topology, store_history=True)
+space = Space(topology, recorders=[drawer])
 space.initialize(node_fabric.Node(GRASS))
 
 
@@ -60,29 +81,14 @@ for _ in range(3):
                 node <<= WATER
 
 with space.step():
-    for node in space.base(Fraction(0.05), GRASS):
+    for node in space.base(Fraction(0.03), GRASS):
         node <<= FOREST
 
 with space.step():
-    for node in space.base(Fraction(0.2), GRASS):
+    for node in space.base(Fraction(0.1), GRASS):
         if (SquareRadius(node, 2).base(FOREST) and
             SquareRadius(node).actual(FOREST) | ~Exists()):
             node <<= FOREST
 
 
-############
-# visualizer
-############
-
-drawer = Drawer2D(cell_size=10)
-
-drawer.add_biome(Biome(checker=GRASS, sprite=Sprite(RGBA(0, 1, 0))))
-drawer.add_biome(Biome(checker=WATER, sprite=Sprite(RGBA(0, 0, 1))))
-drawer.add_biome(Biome(checker=SAND, sprite=Sprite(RGBA(1, 1, 0))))
-drawer.add_biome(Biome(checker=FOREST, sprite=Sprite(RGBA(0, 0.5, 0))))
-drawer.add_biome(Biome(checker=All(), sprite=Sprite(RGBA(0, 0, 0))))
-
-# canvas = drawer.draw(space.base(), width=WIDTH, height=HEIGHT)
-# canvas.show()
-
-drawer.save_history('./example.webp', space, width=WIDTH, height=HEIGHT)
+drawer.finish()
