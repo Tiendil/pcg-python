@@ -1,4 +1,5 @@
 
+import random
 import fractions
 import dataclasses
 
@@ -36,3 +37,10 @@ class RGBA(Color):
                 int(round(255 * self.g)),
                 int(round(255 * self.b)),
                 int(round(255 * self.a)))
+
+    @classmethod
+    def random(cls, a=1.0):
+        return cls(r=random.random(),
+                   g=random.random(),
+                   b=random.random(),
+                   a=a)
