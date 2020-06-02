@@ -2,6 +2,8 @@
 import math
 import dataclasses
 
+from .topologies import BaseArea
+
 
 # https://www.redblobgames.com/grids/hexagons/implementation.html
 
@@ -22,20 +24,32 @@ class Cell:
         object.__setattr__(self, 'r', r)
         object.__setattr__(self, 's', s)
 
+    @classmethod
+    def from_qr(cls, q:int, r: int):
+        return cls(q=q, r=r, s=-q-r)
+
+    @classmethod
+    def from_qs(cls, q:int, s: int):
+        return cls(q=q, r=-q-s, s=s)
+
+    @classmethod
+    def from_qs(cls, r:int, s: int):
+        return cls(q=-r-s, r=r, s=s)
+
     def __add__(self, cell: 'Cell'):
         return Cell(self.q + cell.q,
-                           self.r + cell.r,
-                           self.s + cell.s)
+                    self.r + cell.r,
+                    self.s + cell.s)
 
     def __sub__(self, cell: 'Cell'):
         return Cell(self.q - cell.q,
-                           self.r - cell.r,
-                           self.s - cell.s)
+                    self.r - cell.r,
+                    self.s - cell.s)
 
     def scale(self, scale: float):
         return Cell(self.q * scale,
-                           self.r * scale,
-                           self.s * scale)
+                    self.r * scale,
+                    self.s * scale)
 
     def neighbour(self, i):
         return self + DIRECTIONS[i % 6]
@@ -60,8 +74,11 @@ def manhattan_distance(a: Cell, b: Cell):
     return manhattan_length(a - b)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class Orientation:
+    __slots__ = ('f0', 'f1', 'f2', 'f3',
+                 'b0', 'b1', 'b2', 'b3',
+                 'start_angle')
     f0: float
     f1: float
     f2: float
@@ -85,17 +102,35 @@ layout_flat = Orientation(3.0 / 2.0, 0.0, math.sqrt(3.0) / 2.0, math.sqrt(3.0),
                           0.0)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True, order=True)
 class Point:
+    __slots__ = ('x', 'y')
+
     x: float
     y: float
 
+    @property
     def xy(self):
         return self.x, self.y
 
     def __truediv__(self, other):
         return Point(self.x / 2, self.y / 2)
 
+    def __add__(self, point: 'Point'):
+        return Point(self.x + point.x,
+                     self.y + point.y)
+
+    def __sub__(self, point: 'Point'):
+        return Point(self.x - point.x,
+                     self.y - point.y)
+
+    def scale(self, scale: float):
+        return Point(self.x * scale,
+                     self.y * scale)
+
+    def round_up(self):
+        return Point(int(math.ceil(self.x)),
+                     int(math.ceil(self.y)))
 
 @dataclasses.dataclass
 class Layout:
@@ -103,45 +138,138 @@ class Layout:
     size: Point
     origin: Point
 
+    def __init__(self, orientation, size, origin):
+        self.orientation = orientation
+        self.size = size
+        self.origin = origin
 
-def cell_to_pixel(layout: Layout, cell: Cell):
-    m = layout.orientation
+        self.cell_corners_offsets = [self._cell_corner_offset(i) for i in range(6)]
+        self.cell_size = self._cell_size()
 
-    x = (m.f0 * cell.q + m.f1 * cell.r) * layout.size.x;
-    y = (m.f2 * cell.q + m.f3 * cell.r) * layout.size.y;
+    def cell_to_pixel(self, cell: Cell):
+        m = self.orientation
 
-    return Point(x + layout.origin.x, y + layout.origin.y)
+        x = (m.f0 * cell.q + m.f1 * cell.r) * self.size.x;
+        y = (m.f2 * cell.q + m.f3 * cell.r) * self.size.y;
+
+        return Point(x + self.origin.x, y + self.origin.y)
+
+    def _cell_corner_offset(self, corner: int):
+        size = self.size
+
+        angle = 2.0 * math.pi * (self.orientation.start_angle + corner) / 6
+
+        return Point(size.x * math.cos(angle),
+                     size.y * math.sin(angle))
+
+    def _cell_size(self):
+        min_x, max_x = 0, 0
+        min_y, max_y = 0, 0
+
+        for corner in self.cell_corners_offsets:
+            min_x = min(min_x, corner.x)
+            max_x = max(max_x, corner.x)
+            min_y = min(min_y, corner.y)
+            max_y = max(max_y, corner.y)
+
+        return Point(max_x - min_x, max_y - min_y)
+
+    def cell_corners(self, cell: Cell):
+        center = self.cell_to_pixel(cell)
+        return [center + offset for offset in self.cell_corners_offsets]
 
 
-def pixel_to_cell(layout: Layout, point: Point):
-    m = layout.orientation
+def cells_parallelogram(q=None, r=None, s=None):
+    if q is None:
+        max_k = r
+        max_l = s
+        constructor = Cell.from_rs
+    elif r is None:
+        max_k = q
+        max_l = s
+        constructor = Cell.from_qs
+    elif s is None:
+        max_k = q
+        max_l = r
+        constructor = Cell.from_qr
+    else:
+        raise NotImplementedError('wrong call args')
 
-    pt = Point((point.x - layout.origin.x) / layout.size.x,
-               (point.y - layout.origin.y) / layout.size.y)
-
-    q = m.b0 * pt.x + m.b1 * pt.y
-    r = m.b2 * pt.x + m.b3 * pt.y
-
-    return FractionalCell(q, r, -q - r)
+    for k in range(max_k):
+        for l in range(max_l):
+            yield constructor(k, l)
 
 
-def cell_corner_offset(layout: Layout, corner: int):
-    size = layout.size
-
-    angle = 2.0 * math.pi * (layout.orientation.start_angle + corner) / 6
-
-    return Point(size.x * math.cos(angle),
-                 size.y * math.sin(angle))
+# https://www.redblobgames.com/grids/hexagons/implementation.html#shape-triangle
+def cells_triangle():
+    raise NotImplementedError
 
 
-def cell_corners(layout: Layout, cell):
-    corners = []
+def cells_hexagon(radius):
+    for q in range(-radius, radius + 1):
+        r_min = max(-radius, -q - radius)
+        r_max = min(radius, -q + radius)
 
-    center = cell_to_pixel(layout, cell)
+        for r in range(r_min, r_max + 1):
+            yield Cell.from_qr(q, r)
 
-    for i in range(6):
-        offset = cell_corner_offset(layout, i)
-        corners.append(Point(center.x + offset.x,
-                             center.y + offset.y))
 
-    return corners
+# https://www.redblobgames.com/grids/hexagons/implementation.html#shape-rectangle
+def cells_rectangle():
+    raise NotImplementedError
+
+
+def area_template(min_distance, max_distance, distance):
+    area = []
+
+    for dx in range(-max_distance, max_distance + 1):
+        for dy in range(-max_distance, max_distance + 1):
+
+            point = XY(dx, dy)
+
+            if min_distance <= distance(point) <= max_distance:
+                area.append(point)
+
+    return area
+
+
+def area(topology, distance, min_distance, max_distance):
+    cache = [None] * topology.size()
+
+    template = area_template(min_distance, max_distance, distance)
+
+    for center, index in topology.indexes.items():
+        points = [center.move(*point.xy) for point in template]
+        cache[index] = topology.area_indexes(points)
+
+    return cache
+
+
+class Euclidean(BaseArea):
+    __slots__ = ()
+
+    def connectome(self, topology, min_distance, max_distance):
+        return area(topology, self.distance, min_distance, max_distance)
+
+    def distance(self, a, b=XY(0, 0)):
+        return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
+
+
+class Manhattan(BaseArea):
+    __slots__ = ()
+
+    def connectome(self, topology, min_distance, max_distance):
+        return area(topology, self.distance, min_distance, max_distance)
+
+    def distance(self, a, b=XY(0, 0)):
+        return abs(a.x-b.x) + abs(a.y-b.y)
+
+
+class SquareRadius(BaseArea):
+    __slots__ = ()
+
+    def connectome(self, topology, min_distance, max_distance):
+        return area(topology, self.distance, min_distance, max_distance)
+
+    def distance(self, a, b=XY(0, 0)):
+        return max(abs(a.x-b.x), abs(a.y-b.y))
