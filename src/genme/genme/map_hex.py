@@ -77,8 +77,7 @@ def manhattan_distance(a: Cell, b: Cell):
 @dataclasses.dataclass(frozen=True)
 class Orientation:
     __slots__ = ('f0', 'f1', 'f2', 'f3',
-                 'b0', 'b1', 'b2', 'b3',
-                 'start_angle')
+                 'b0', 'b1', 'b2', 'b3')
     f0: float
     f1: float
     f2: float
@@ -89,17 +88,9 @@ class Orientation:
     b2: float
     b3: float
 
-    start_angle: float
-
 
 layout_pointy = Orientation(math.sqrt(3.0), math.sqrt(3.0) / 2.0, 0.0, 3.0 / 2.0,
-                            math.sqrt(3.0) / 3.0, -1.0 / 3.0, 0.0, 2.0 / 3.0,
-                            0.5)
-
-
-layout_flat = Orientation(3.0 / 2.0, 0.0, math.sqrt(3.0) / 2.0, math.sqrt(3.0),
-                          2.0 / 3.0, 0.0, -1.0 / 3.0, math.sqrt(3.0) / 3.0,
-                          0.0)
+                            math.sqrt(3.0) / 3.0, -1.0 / 3.0, 0.0, 2.0 / 3.0)
 
 
 @dataclasses.dataclass(frozen=True, order=True)
@@ -124,6 +115,10 @@ class Point:
         return Point(self.x - point.x,
                      self.y - point.y)
 
+    def __mul__(self, point: 'Point'):
+        return Point(self.x * point.x,
+                     self.y * point.y)
+
     def scale(self, scale: float):
         return Point(self.x * scale,
                      self.y * scale)
@@ -132,51 +127,40 @@ class Point:
         return Point(int(math.ceil(self.x)),
                      int(math.ceil(self.y)))
 
-@dataclasses.dataclass
-class Layout:
-    orientation: Orientation
-    size: Point
-    origin: Point
 
-    def __init__(self, orientation, size, origin):
-        self.orientation = orientation
-        self.size = size
-        self.origin = origin
+def cell_corner_offset(corner: int):
+    angle = 2.0 * math.pi * (0.5 + corner) / 6
+    return Point(math.cos(angle), math.sin(angle))
 
-        self.cell_corners_offsets = [self._cell_corner_offset(i) for i in range(6)]
-        self.cell_size = self._cell_size()
 
-    def cell_to_pixel(self, cell: Cell):
-        m = self.orientation
+CELL_CORNERS_OFFSETS = [cell_corner_offset(i) for i in range(6)]
 
-        x = (m.f0 * cell.q + m.f1 * cell.r) * self.size.x;
-        y = (m.f2 * cell.q + m.f3 * cell.r) * self.size.y;
 
-        return Point(x + self.origin.x, y + self.origin.y)
+def normal_cell_size():
+    min_x, max_x = 0, 0
+    min_y, max_y = 0, 0
 
-    def _cell_corner_offset(self, corner: int):
-        size = self.size
+    for corner in CELL_CORNERS_OFFSETS:
+        min_x = min(min_x, corner.x)
+        max_x = max(max_x, corner.x)
+        min_y = min(min_y, corner.y)
+        max_y = max(max_y, corner.y)
 
-        angle = 2.0 * math.pi * (self.orientation.start_angle + corner) / 6
+    return Point(max_x - min_x, max_y - min_y)
 
-        return Point(size.x * math.cos(angle),
-                     size.y * math.sin(angle))
 
-    def _cell_size(self):
-        min_x, max_x = 0, 0
-        min_y, max_y = 0, 0
+CELL_SIZE = normal_cell_size()
 
-        for corner in self.cell_corners_offsets:
-            min_x = min(min_x, corner.x)
-            max_x = max(max_x, corner.x)
-            min_y = min(min_y, corner.y)
-            max_y = max(max_y, corner.y)
 
-        return Point(max_x - min_x, max_y - min_y)
+def cell_center(cell: Cell):
+    x = (layout_pointy.f0 * cell.q + layout_pointy.f1 * cell.r);
+    y = (layout_pointy.f2 * cell.q + layout_pointy.f3 * cell.r);
+    return Point(x, y)
 
-    def cell_corners(self, cell: Cell):
-        center = self.cell_to_pixel(cell)
-        return [center + offset for offset in self.cell_corners_offsets]
+
+def cell_corners(cell: Cell):
+    center = cell_center(cell)
+    return [center + offset for offset in CELL_CORNERS_OFFSETS]
 
 
 def cells_parallelogram(q=None, r=None, s=None):
@@ -219,16 +203,46 @@ def cells_rectangle():
     raise NotImplementedError
 
 
+def cells_ring(center, radius):
+
+    if radius == 0:
+        return [center]
+
+    if radius == 1:
+        return center.neighbours()
+
+    results = []
+
+    cell_pointer = center + DIRECTIONS[4] * radius
+
+    for i in range(6):
+        for j in range(radius):
+            results.append(cell_pointer)
+            cell_pointer = cell_pointer.neighbour(i)
+
+    return results
+
+
 def area_template(min_distance, max_distance, distance):
     area = []
 
-    for dx in range(-max_distance, max_distance + 1):
-        for dy in range(-max_distance, max_distance + 1):
+    radius = 0
+    max_distance_exceed = False
 
-            point = XY(dx, dy)
+    center = Cell(0, 0, 0)
 
-            if min_distance <= distance(point) <= max_distance:
-                area.append(point)
+    while not max_distance_exceed:
+
+        max_distance_exceed = True
+
+        for cell in cells_ring(center, radius):
+            cell_distance = distance(center, cell)
+
+            if cell_distance <= max_distance:
+                max_distance_exceed = False
+
+                if min_distance <= cell_distance:
+                    area.append(cell)
 
     return area
 
@@ -251,7 +265,7 @@ class Euclidean(BaseArea):
     def connectome(self, topology, min_distance, max_distance):
         return area(topology, self.distance, min_distance, max_distance)
 
-    def distance(self, a, b=XY(0, 0)):
+    def distance(self, a, b=Cell(0, 0, 0)):
         return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
 
 
@@ -261,7 +275,7 @@ class Manhattan(BaseArea):
     def connectome(self, topology, min_distance, max_distance):
         return area(topology, self.distance, min_distance, max_distance)
 
-    def distance(self, a, b=XY(0, 0)):
+    def distance(self, a, b=Cell(0, 0, 0)):
         return abs(a.x-b.x) + abs(a.y-b.y)
 
 
@@ -271,5 +285,5 @@ class SquareRadius(BaseArea):
     def connectome(self, topology, min_distance, max_distance):
         return area(topology, self.distance, min_distance, max_distance)
 
-    def distance(self, a, b=XY(0, 0)):
+    def distance(self, a, b=Cell(0, 0, 0)):
         return max(abs(a.x-b.x), abs(a.y-b.y))

@@ -24,18 +24,18 @@ class Sprite:
     color: colors.Color = BLACK
     image: Image = dataclasses.field(default=None, init=False, compare=False)
 
-    def prepair(self, layout):
-        self.image = Image.new('RGBA', layout.cell_size.round_up().xy, ALPHA.ints)
+    def prepair(self):
+        sprite_size = map_hex.CELL_SIZE * cell_size
 
-        layout = map_hex.Layout(orientation=layout.orientation,
-                                size=layout.size,
-                                origin=layout.cell_size / 2)
+        self.image = Image.new('RGBA', sprite_size.round_up().xy, ALPHA.ints)
+
+        center = sprite_size / 2
 
         cell = map_hex.Cell(0, 0, 0)
 
         draw = ImageDraw.Draw(self.image)
 
-        draw.polygon([point.xy for point in layout.cell_corners(cell)],
+        draw.polygon([(center + point * cell_size).xy for point in map_hex.cell_corners(cell)],
                       fill=self.color.ints)
 
 
@@ -47,18 +47,17 @@ class Biome:
 
 
 class DrawerHex:
-    __slots__ = ('biomes', 'layout', 'canvas_size', 'duration', 'frames', 'filename')
+    __slots__ = ('biomes', 'canvas_size', 'duration', 'frames', 'filename')
 
-    def __init__(self, layout, canvas_size, duration, filename):
+    def __init__(self, canvas_size, duration, filename):
         self.biomes = []
-        self.layout = layout
         self.canvas_size = canvas_size
         self.duration = duration
         self.frames = []
         self.filename = filename
 
     def add_biome(self, biome):
-        biome.sprite.prepair(self.layout)
+        biome.sprite.prepair()
         self.biomes.append(biome)
 
     def choose_biome(self, node):
@@ -71,10 +70,12 @@ class DrawerHex:
                            self.canvas_size.xy,
                            BLACK.ints)
 
+        center = self.canvas_size / 2
+
         for node in nodes:
             biome = self.choose_biome(node)
 
-            position = (layout.cell_to_pixel(node.coordinates) - layout.size / 2).xy
+            position = (center + map_hex.cell_center(node.coordinates) * cell_size - cell_size / 2).xy
 
             # TODO: round position correctly
             canvas.paste(biome.sprite.image,
@@ -107,11 +108,6 @@ canvas_size = map_hex.Point(40 * cell_size.x,
                             40 * cell_size.y)
 
 
-layout = map_hex.Layout(orientation=map_hex.layout_flat,
-                        size=cell_size,
-                        origin=canvas_size / 2)
-
-
 class PROPERTY_GROUP(enum.Enum):
     TERRAIN = 1
 
@@ -128,8 +124,7 @@ FOREST = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
 # visualizer
 ############
 
-drawer = DrawerHex(layout=layout,
-                   canvas_size=canvas_size,
+drawer = DrawerHex(canvas_size=canvas_size,
                    duration=1000,
                    filename='./example.webp')
 
@@ -154,37 +149,37 @@ with space.step():
     for node in space.base(Fraction(0.01)):
         node <<= WATER
 
-with space.step():
-    for node in space.base(Fraction(0.80), GRASS):
-        if map_hex.Euclidean(node, 1, 3).base(WATER) | Exists():
-            node <<= WATER
+# with space.step():
+#     for node in space.base(Fraction(0.80), GRASS):
+#         if map_hex.Euclidean(node, 1, 3).base(WATER) | Exists():
+#             node <<= WATER
 
-with space.step():
-    for node in space.base(GRASS):
-        if map_hex.SquareRadius(node).base(WATER) | Exists():
-            node <<= SAND
+# with space.step():
+#     for node in space.base(GRASS):
+#         if map_hex.SquareRadius(node).base(WATER) | Exists():
+#             node <<= SAND
 
-for _ in range(3):
-    with space.step():
-        for node in space.base(Fraction(0.1), GRASS):
-            if map_hex.SquareRadius(node).base(SAND) | Exists():
-                node <<= SAND
+# for _ in range(3):
+#     with space.step():
+#         for node in space.base(Fraction(0.1), GRASS):
+#             if map_hex.SquareRadius(node).base(SAND) | Exists():
+#                 node <<= SAND
 
-for _ in range(3):
-    with space.step():
-        for node in space.base(SAND):
-            if map_hex.SquareRadius(node).base(WATER) | Between(6, 10):
-                node <<= WATER
+# for _ in range(3):
+#     with space.step():
+#         for node in space.base(SAND):
+#             if map_hex.SquareRadius(node).base(WATER) | Between(6, 10):
+#                 node <<= WATER
 
-with space.step():
-    for node in space.base(Fraction(0.03), GRASS):
-        node <<= FOREST
+# with space.step():
+#     for node in space.base(Fraction(0.03), GRASS):
+#         node <<= FOREST
 
-with space.step():
-    for node in space.base(Fraction(0.1), GRASS):
-        if (map_hex.SquareRadius(node, 2).base(FOREST) and
-            map_hex.SquareRadius(node).actual(FOREST) | ~Exists()):
-            node <<= FOREST
+# with space.step():
+#     for node in space.base(Fraction(0.1), GRASS):
+#         if (map_hex.SquareRadius(node, 2).base(FOREST) and
+#             map_hex.SquareRadius(node).actual(FOREST) | ~Exists()):
+#             node <<= FOREST
 
 
 drawer.finish()
