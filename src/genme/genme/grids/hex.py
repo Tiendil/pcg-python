@@ -1,8 +1,13 @@
-
 import math
 import dataclasses
 
-from .topologies import BaseArea
+from PIL import Image
+from PIL import ImageDraw
+
+from genme import colors
+from genme import drawer
+from genme.topologies import BaseArea
+from genme.geometry import Point
 
 
 # https://www.redblobgames.com/grids/hexagons/implementation.html
@@ -91,41 +96,6 @@ class Orientation:
 
 layout_pointy = Orientation(math.sqrt(3.0), math.sqrt(3.0) / 2.0, 0.0, 3.0 / 2.0,
                             math.sqrt(3.0) / 3.0, -1.0 / 3.0, 0.0, 2.0 / 3.0)
-
-
-@dataclasses.dataclass(frozen=True, order=True)
-class Point:
-    __slots__ = ('x', 'y')
-
-    x: float
-    y: float
-
-    @property
-    def xy(self):
-        return self.x, self.y
-
-    def __truediv__(self, other):
-        return Point(self.x / 2, self.y / 2)
-
-    def __add__(self, point: 'Point'):
-        return Point(self.x + point.x,
-                     self.y + point.y)
-
-    def __sub__(self, point: 'Point'):
-        return Point(self.x - point.x,
-                     self.y - point.y)
-
-    def __mul__(self, point: 'Point'):
-        return Point(self.x * point.x,
-                     self.y * point.y)
-
-    def scale(self, scale: float):
-        return Point(self.x * scale,
-                     self.y * scale)
-
-    def round_up(self):
-        return Point(int(math.ceil(self.x)),
-                     int(math.ceil(self.y)))
 
 
 def cell_corner_offset(corner: int):
@@ -291,3 +261,41 @@ class SquareRadius(BaseArea):
 
     def distance(self, a, b=Cell(0, 0, 0)):
         return max(abs(a.q-b.q), abs(a.r-b.r))
+
+
+################################
+# drawers
+################################
+
+@dataclasses.dataclass
+class Sprite:
+    color: colors.Color = colors.BLACK
+    image: Image = dataclasses.field(default=None, init=False, compare=False)
+
+    def prepair(self, cell_size):
+        sprite_size = CELL_SIZE * cell_size
+
+        self.image = Image.new('RGBA', sprite_size.round_up().xy, colors.ALPHA.ints)
+
+        center = sprite_size / 2
+
+        cell = Cell(0, 0, 0)
+
+        draw = ImageDraw.Draw(self.image)
+
+        draw.polygon([(center + point * cell_size).xy for point in cell_corners(cell)],
+                      fill=self.color.ints)
+
+
+class Drawer(drawer.Drawer):
+    __slots__ = ('cell_size',)
+
+    def __init__(self, cell_size, **kwargs):
+        super().__init__(**kwargs)
+        self.cell_size = cell_size
+
+    def prepair_sprite(self, sprite):
+        sprite.prepair(self.cell_size)
+
+    def node_position(self, node):
+        return self.canvas_size / 2 + cell_center(node.coordinates) * self.cell_size - self.cell_size / 2

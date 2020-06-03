@@ -44,3 +44,7 @@ class RGBA(Color):
                    g=random.random(),
                    b=random.random(),
                    a=a)
+
+
+ALPHA = RGBA(0, 0, 0, 0)
+BLACK = RGBA(0, 0, 0)
