@@ -15,19 +15,21 @@ class Biome:
 
 
 class Drawer:
-    __slots__ = ('biomes', 'canvas_size', 'duration', 'frames', 'filename')
+    __slots__ = ('biomes', 'duration', 'frames', 'filename')
 
-    def __init__(self, canvas_size, duration, filename):
+    def __init__(self, duration, filename):
         self.biomes = []
-        self.canvas_size = canvas_size
         self.duration = duration
         self.frames = []
         self.filename = filename
 
-    def node_position(self, node):
+    def node_position(self, node, canvas_size):
         raise NotImplementedError()
 
     def prepair_sprite(self, sprite):
+        raise NotImplementedError()
+
+    def calculate_canvas_size(self, nodes):
         raise NotImplementedError()
 
     def add_biome(self, biome):
@@ -40,14 +42,16 @@ class Drawer:
                 return biome
 
     def draw(self, nodes):
+        canvas_size = self.calculate_canvas_size(nodes)
+
         canvas = Image.new('RGBA',
-                           self.canvas_size.xy,
+                           canvas_size.xy,
                            colors.BLACK.ints)
 
         for node in nodes:
             biome = self.choose_biome(node)
 
-            position = self.node_position(node).xy
+            position = self.node_position(node, canvas_size).xy
 
             # TODO: round position correctly
             canvas.paste(biome.sprite.image,
@@ -57,7 +61,7 @@ class Drawer:
         return canvas
 
     def record(self, space):
-        canvas = self.draw(space.base())
+        canvas = self.draw(list(space.base()))
         self.frames.append(canvas)
 
     def finish(self):

@@ -1,30 +1,21 @@
 
 import enum
-import typing
-import dataclasses
 
-from genme import colors
 from genme import nodes
-from genme import topologies
+from genme import colors
 from genme import geometry
+from genme import topologies
+from genme.space import Space
 from genme import drawer as base_drawer
 from genme.grids import hex as hex_grid
 
-from genme.space import *
 from genme.filters import *
 from genme.aggregators import *
 
 
-##############################
-# map
-##############################
-
-
-cell_size = geometry.Point(10, 10)
-
-canvas_size = geometry.Point(90 * cell_size.x,
-                             90 * cell_size.y)
-
+############
+# properties
+############
 
 class PROPERTY_GROUP(enum.Enum):
     TERRAIN = 1
@@ -38,12 +29,12 @@ WATER = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
 SAND = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
 FOREST = node_fabric.Property(PROPERTY_GROUP.TERRAIN)
 
+
 ############
 # visualizer
 ############
 
-drawer = hex_grid.Drawer(canvas_size=canvas_size,
-                         cell_size=cell_size,
+drawer = hex_grid.Drawer(cell_size=geometry.Point(10, 10),
                          duration=1000,
                          filename='./example.webp')
 
@@ -75,19 +66,19 @@ with space.step():
 
 with space.step():
     for node in space.base(GRASS):
-        if hex_grid.SquareRadius(node).base(WATER) | Exists():
+        if hex_grid.Ring(node).base(WATER) | Exists():
             node <<= SAND
 
 for _ in range(3):
     with space.step():
         for node in space.base(Fraction(0.1), GRASS):
-            if hex_grid.SquareRadius(node).base(SAND) | Exists():
+            if hex_grid.Ring(node).base(SAND) | Exists():
                 node <<= SAND
 
 for _ in range(3):
     with space.step():
         for node in space.base(SAND):
-            if hex_grid.SquareRadius(node).base(WATER) | Between(6, 10):
+            if hex_grid.Ring(node).base(WATER) | Between(6, 10):
                 node <<= WATER
 
 with space.step():
@@ -96,8 +87,8 @@ with space.step():
 
 with space.step():
     for node in space.base(Fraction(0.1), GRASS):
-        if (hex_grid.SquareRadius(node, 2).base(FOREST) and
-            hex_grid.SquareRadius(node).actual(FOREST) | ~Exists()):
+        if (hex_grid.Ring(node, 2).base(FOREST) and
+            hex_grid.Ring(node).actual(FOREST) | ~Exists()):
             node <<= FOREST
 
 

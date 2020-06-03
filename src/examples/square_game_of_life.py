@@ -32,13 +32,7 @@ ALIVE = node_fabric.Property(PROPERTY_GROUP.STATE)
 # visualizer
 ############
 
-cell_size = geometry.Point(5, 5)
-
-canvas_size = geometry.Point(WIDTH * cell_size.x,
-                             HEIGHT * cell_size.y)
-
-drawer = square_grid.Drawer(cell_size=cell_size,
-                            canvas_size=canvas_size,
+drawer = square_grid.Drawer(cell_size=geometry.Point(5, 5),
                             duration=100,
                             filename='./example.webp')
 
@@ -72,11 +66,11 @@ for i in range(STEPS):
 
     with space.step():
         for node in space.base(ALIVE):
-            if square_grid.SquareRadius(node).base(ALIVE) | ~Between(2, 3):
+            if square_grid.Ring(node).base(ALIVE) | ~Between(2, 3):
                 node <<= DEAD
 
         for node in space.base(DEAD):
-            if square_grid.SquareRadius(node).base(ALIVE) | Count(3):
+            if square_grid.Ring(node).base(ALIVE) | Count(3):
                 node <<= ALIVE
 
 

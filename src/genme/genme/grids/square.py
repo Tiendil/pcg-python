@@ -6,7 +6,7 @@ from PIL import Image
 from genme import colors
 from genme import drawer
 from genme.topologies import BaseArea
-from genme.geometry import Point
+from genme.geometry import Point, BoundingBox
 
 
 @dataclasses.dataclass(frozen=True, order=True)
@@ -28,12 +28,6 @@ class Cell:
         return Cell(self.x * scale,
                     self.y * scale)
 
-    # def neighbour(self, i):
-    #     return self + DIRECTIONS[i % 6]
-
-    # def neighbours(self):
-    #     return [self + DIRECTIONS[i] for i in range(6)]
-
 
 def cells_rectangle(width, height):
     for y in range(height):
@@ -43,6 +37,22 @@ def cells_rectangle(width, height):
 
 def cell_center(cell):
     return Point(cell.x + 0.5, cell.y + 0.5)
+
+
+def cell_bounding_box(cell):
+    return BoundingBox(x_min=cell.x,
+                       y_min=cell.y,
+                       x_max=cell.x + 1,
+                       y_max=cell.y + 1)
+
+
+def cells_bounding_box(cells):
+    box = cell_bounding_box(cells[0])
+
+    for cell in cells[1:]:
+        box += cell_bounding_box(cell)
+
+    return box
 
 
 def area_template(min_distance, max_distance, distance):
@@ -91,7 +101,7 @@ class Manhattan(BaseArea):
         return abs(a.x-b.x) + abs(a.y-b.y)
 
 
-class SquareRadius(BaseArea):
+class Ring(BaseArea):
     __slots__ = ()
 
     def connectome(self, topology, min_distance, max_distance):
@@ -124,5 +134,9 @@ class Drawer(drawer.Drawer):
     def prepair_sprite(self, sprite):
         sprite.prepair(self.cell_size)
 
-    def node_position(self, node):
+    def node_position(self, node, canvas_size):
         return cell_center(node.coordinates) * self.cell_size - self.cell_size / 2
+
+    def calculate_canvas_size(self, nodes):
+        coordinates = [node.coordinates for node in nodes]
+        return (cells_bounding_box(coordinates).size * self.cell_size).round_up()

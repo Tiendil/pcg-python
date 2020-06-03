@@ -7,7 +7,7 @@ from PIL import ImageDraw
 from genme import colors
 from genme import drawer
 from genme.topologies import BaseArea
-from genme.geometry import Point
+from genme.geometry import Point, BoundingBox
 
 
 # https://www.redblobgames.com/grids/hexagons/implementation.html
@@ -133,6 +133,26 @@ def cell_corners(cell: Cell):
     return [center + offset for offset in CELL_CORNERS_OFFSETS]
 
 
+def cell_bounding_box(cell):
+    corners = cell_corners(cell)
+
+    box = BoundingBox.from_point(corners[0])
+
+    for corner in corners[1:]:
+        box += corner
+
+    return box
+
+
+def cells_bounding_box(cells):
+    box = cell_bounding_box(cells[0])
+
+    for cell in cells[1:]:
+        box += cell_bounding_box(cell)
+
+    return box
+
+
 def cells_parallelogram(q=None, r=None, s=None):
     if q is None:
         max_k = r
@@ -253,7 +273,7 @@ class Manhattan(BaseArea):
         return manhattan_distance(a, b)
 
 
-class SquareRadius(BaseArea):
+class Ring(BaseArea):
     __slots__ = ()
 
     def connectome(self, topology, min_distance, max_distance):
@@ -297,5 +317,9 @@ class Drawer(drawer.Drawer):
     def prepair_sprite(self, sprite):
         sprite.prepair(self.cell_size)
 
-    def node_position(self, node):
-        return self.canvas_size / 2 + cell_center(node.coordinates) * self.cell_size - self.cell_size / 2
+    def node_position(self, node, canvas_size):
+        return canvas_size / 2 + cell_center(node.coordinates) * self.cell_size - self.cell_size
+
+    def calculate_canvas_size(self, nodes):
+        coordinates = [node.coordinates for node in nodes]
+        return (cells_bounding_box(coordinates).size * self.cell_size).round_up()

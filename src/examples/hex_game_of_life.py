@@ -32,13 +32,7 @@ ALIVE = node_fabric.Property(PROPERTY_GROUP.STATE)
 # visualizer
 ############
 
-cell_size = geometry.Point(10, 10)
-
-canvas_size = geometry.Point(90 * cell_size.x,
-                             90 * cell_size.y)
-
-drawer = hex_grid.Drawer(cell_size=cell_size,
-                         canvas_size=canvas_size,
+drawer = hex_grid.Drawer(cell_size=geometry.Point(5, 5),
                          duration=100,
                          filename='./example.webp')
 
@@ -51,7 +45,7 @@ drawer.add_biome(base_drawer.Biome(checker=All(), sprite=hex_grid.Sprite(RGBA(0,
 # generator
 ###########
 
-topology = Topology(coordinates=hex_grid.cells_hexagon(25))
+topology = Topology(coordinates=hex_grid.cells_hexagon(40))
 
 space = Space(topology, recorders=[drawer])
 space.initialize(node_fabric.Node(DEAD))
@@ -72,11 +66,11 @@ for i in range(STEPS):
 
     with space.step():
         for node in space.base(ALIVE):
-            if hex_grid.SquareRadius(node).base(ALIVE) | ~Between(2, 3):
+            if hex_grid.Ring(node).base(ALIVE) | ~Between(2, 3):
                 node <<= DEAD
 
         for node in space.base(DEAD):
-            if hex_grid.SquareRadius(node).base(ALIVE) | Count(3):
+            if hex_grid.Ring(node).base(ALIVE) | Count(3):
                 node <<= ALIVE
 
 
