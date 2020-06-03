@@ -213,7 +213,7 @@ def cells_ring(center, radius):
 
     results = []
 
-    cell_pointer = center + DIRECTIONS[4] * radius
+    cell_pointer = center + DIRECTIONS[4].scale(radius)
 
     for i in range(6):
         for j in range(radius):
@@ -244,6 +244,8 @@ def area_template(min_distance, max_distance, distance):
                 if min_distance <= cell_distance:
                     area.append(cell)
 
+        radius += 1
+
     return area
 
 
@@ -253,7 +255,7 @@ def area(topology, distance, min_distance, max_distance):
     template = area_template(min_distance, max_distance, distance)
 
     for center, index in topology.indexes.items():
-        points = [center.move(*point.xy) for point in template]
+        points = [center + point for point in template]
         cache[index] = topology.area_indexes(points)
 
     return cache
@@ -266,6 +268,8 @@ class Euclidean(BaseArea):
         return area(topology, self.distance, min_distance, max_distance)
 
     def distance(self, a, b=Cell(0, 0, 0)):
+        a = cell_center(a)
+        b = cell_center(b)
         return math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
 
 
@@ -276,7 +280,7 @@ class Manhattan(BaseArea):
         return area(topology, self.distance, min_distance, max_distance)
 
     def distance(self, a, b=Cell(0, 0, 0)):
-        return abs(a.x-b.x) + abs(a.y-b.y)
+        return manhattan_distance(a, b)
 
 
 class SquareRadius(BaseArea):
@@ -286,4 +290,4 @@ class SquareRadius(BaseArea):
         return area(topology, self.distance, min_distance, max_distance)
 
     def distance(self, a, b=Cell(0, 0, 0)):
-        return max(abs(a.x-b.x), abs(a.y-b.y))
+        return max(abs(a.q-b.q), abs(a.r-b.r))

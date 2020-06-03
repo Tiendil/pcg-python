@@ -13,6 +13,7 @@ from genme import topologies
 
 from genme.space import *
 from genme.filters import *
+from genme.aggregators import *
 
 
 ALPHA = colors.RGBA(0, 0, 0, 0)
@@ -104,8 +105,8 @@ class DrawerHex:
 
 cell_size = map_hex.Point(10, 10)
 
-canvas_size = map_hex.Point(40 * cell_size.x,
-                            40 * cell_size.y)
+canvas_size = map_hex.Point(90 * cell_size.x,
+                            90 * cell_size.y)
 
 
 class PROPERTY_GROUP(enum.Enum):
@@ -139,7 +140,7 @@ drawer.add_biome(Biome(checker=All(), sprite=Sprite(colors.RGBA(0, 0, 0))))
 # generator
 ###########
 
-topology = topologies.Topology(coordinates=map_hex.cells_hexagon(10))
+topology = topologies.Topology(coordinates=map_hex.cells_hexagon(25))
 
 space = Space(topology, recorders=[drawer])
 space.initialize(node_fabric.Node(GRASS))
@@ -149,37 +150,37 @@ with space.step():
     for node in space.base(Fraction(0.01)):
         node <<= WATER
 
-# with space.step():
-#     for node in space.base(Fraction(0.80), GRASS):
-#         if map_hex.Euclidean(node, 1, 3).base(WATER) | Exists():
-#             node <<= WATER
+with space.step():
+    for node in space.base(Fraction(0.80), GRASS):
+        if map_hex.Euclidean(node, 1, 3).base(WATER) | Exists():
+            node <<= WATER
 
-# with space.step():
-#     for node in space.base(GRASS):
-#         if map_hex.SquareRadius(node).base(WATER) | Exists():
-#             node <<= SAND
+with space.step():
+    for node in space.base(GRASS):
+        if map_hex.SquareRadius(node).base(WATER) | Exists():
+            node <<= SAND
 
-# for _ in range(3):
-#     with space.step():
-#         for node in space.base(Fraction(0.1), GRASS):
-#             if map_hex.SquareRadius(node).base(SAND) | Exists():
-#                 node <<= SAND
+for _ in range(3):
+    with space.step():
+        for node in space.base(Fraction(0.1), GRASS):
+            if map_hex.SquareRadius(node).base(SAND) | Exists():
+                node <<= SAND
 
-# for _ in range(3):
-#     with space.step():
-#         for node in space.base(SAND):
-#             if map_hex.SquareRadius(node).base(WATER) | Between(6, 10):
-#                 node <<= WATER
+for _ in range(3):
+    with space.step():
+        for node in space.base(SAND):
+            if map_hex.SquareRadius(node).base(WATER) | Between(6, 10):
+                node <<= WATER
 
-# with space.step():
-#     for node in space.base(Fraction(0.03), GRASS):
-#         node <<= FOREST
+with space.step():
+    for node in space.base(Fraction(0.03), GRASS):
+        node <<= FOREST
 
-# with space.step():
-#     for node in space.base(Fraction(0.1), GRASS):
-#         if (map_hex.SquareRadius(node, 2).base(FOREST) and
-#             map_hex.SquareRadius(node).actual(FOREST) | ~Exists()):
-#             node <<= FOREST
+with space.step():
+    for node in space.base(Fraction(0.1), GRASS):
+        if (map_hex.SquareRadius(node, 2).base(FOREST) and
+            map_hex.SquareRadius(node).actual(FOREST) | ~Exists()):
+            node <<= FOREST
 
 
 drawer.finish()
