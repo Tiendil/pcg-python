@@ -1,16 +1,16 @@
 
 import enum
 
-from genme.nodes import *
-from genme.filters import *
-from genme.aggregators import *
-from genme.topologies import *
-from genme.colors import *
-from genme.space import *
+from pcg.nodes import *
+from pcg.filters import *
+from pcg.aggregators import *
+from pcg.topologies import *
+from pcg.colors import *
+from pcg.space import *
 
-from genme import drawer as base_drawer
-from genme.grids import hex as hex_grid
-from genme import geometry
+from pcg import drawer as base_drawer
+from pcg.grids import hex as hex_grid
+from pcg import geometry
 
 
 STEPS = 100

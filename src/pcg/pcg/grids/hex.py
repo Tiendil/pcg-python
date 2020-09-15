@@ -4,10 +4,10 @@ import dataclasses
 from PIL import Image
 from PIL import ImageDraw
 
-from genme import colors
-from genme import drawer
-from genme.topologies import BaseArea
-from genme.geometry import Point, BoundingBox
+from pcg import colors
+from pcg import drawer
+from pcg.topologies import BaseArea
+from pcg.geometry import Point, BoundingBox
 
 
 # https://www.redblobgames.com/grids/hexagons/implementation.html

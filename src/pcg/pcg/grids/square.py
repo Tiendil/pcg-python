@@ -3,10 +3,10 @@ import dataclasses
 
 from PIL import Image
 
-from genme import colors
-from genme import drawer
-from genme.topologies import BaseArea
-from genme.geometry import Point, BoundingBox
+from pcg import colors
+from pcg import drawer
+from pcg.topologies import BaseArea
+from pcg.geometry import Point, BoundingBox
 
 
 @dataclasses.dataclass(frozen=True, order=True)
